@@ -40,14 +40,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     { q: t.faq5Q, a: t.faq5A }
   ];
 
-  const languageLabels: Record<string, string> = {
-    it: "Italiano",
-    en: "English",
-    es: "Español",
-    fr: "Français",
-    de: "Deutsch"
-  };
-
   return (
     <div className="min-h-screen bg-[#FCFAF7] text-stone-900 font-sans selection:bg-orange-100 selection:text-orange-900 relative">
       {/* Sticky Header with Blur */}
@@ -81,21 +73,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </nav>
 
           <div className="flex items-center gap-3 shrink-0">
-            {/* Language Selector */}
-            <div className="hidden sm:flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
-              <Globe size={13} className="text-stone-500 ml-1" />
-              {(["it", "en", "es", "fr", "de"] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  aria-label={languageLabels[l]}
-                  className={`px-2 py-1 rounded transition-colors uppercase ${
-                    lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
+            {/* Language Selector Dropdown */}
+            <div className="relative flex items-center bg-stone-100 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700">
+              <Globe size={13} className="text-stone-500 mr-1.5 shrink-0" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                aria-label="Seleziona lingua"
+                className="bg-transparent text-stone-900 font-bold focus:outline-none cursor-pointer uppercase pr-2"
+              >
+                <option value="it" className="bg-white text-stone-900">IT</option>
+                <option value="en" className="bg-white text-stone-900">EN</option>
+                <option value="es" className="bg-white text-stone-900">ES</option>
+                <option value="fr" className="bg-white text-stone-900">FR</option>
+                <option value="de" className="bg-white text-stone-900">DE</option>
+              </select>
             </div>
 
             <button
@@ -157,22 +149,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
               <span className="text-xs text-stone-500 font-semibold uppercase">Lingua</span>
-              <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
-                {(["it", "en", "es", "fr", "de"] as const).map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => {
-                      setLang(l);
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-label={languageLabels[l]}
-                    className={`px-2 py-1 rounded transition-colors uppercase ${
-                      lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
-                    }`}
-                  >
-                    {l}
-                  </button>
-                ))}
+              <div className="relative flex items-center bg-stone-100 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700">
+                <Globe size={13} className="text-stone-500 mr-1.5 shrink-0" />
+                <select
+                  value={lang}
+                  onChange={(e) => {
+                    setLang(e.target.value);
+                    setMobileMenuOpen(false);
+                  }}
+                  aria-label="Seleziona lingua"
+                  className="bg-transparent text-stone-900 font-bold focus:outline-none cursor-pointer uppercase pr-2"
+                >
+                  <option value="it" className="bg-white text-stone-900">IT</option>
+                  <option value="en" className="bg-white text-stone-900">EN</option>
+                  <option value="es" className="bg-white text-stone-900">ES</option>
+                  <option value="fr" className="bg-white text-stone-900">FR</option>
+                  <option value="de" className="bg-white text-stone-900">DE</option>
+                </select>
               </div>
             </div>
           </div>
@@ -557,20 +550,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Column 3: Language & Settings */}
           <div className="flex items-center justify-center md:justify-end gap-4">
-            <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
-              <Globe size={13} className="text-stone-500 ml-1" />
-              {(["it", "en", "es", "fr", "de"] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  aria-label={languageLabels[l]}
-                  className={`px-2 py-1 rounded transition-colors uppercase ${
-                    lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
+            <div className="relative flex items-center bg-stone-100 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700">
+              <Globe size={13} className="text-stone-500 mr-1.5 shrink-0" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                aria-label="Seleziona lingua"
+                className="bg-transparent text-stone-900 font-bold focus:outline-none cursor-pointer uppercase pr-2"
+              >
+                <option value="it" className="bg-white text-stone-900">IT</option>
+                <option value="en" className="bg-white text-stone-900">EN</option>
+                <option value="es" className="bg-white text-stone-900">ES</option>
+                <option value="fr" className="bg-white text-stone-900">FR</option>
+                <option value="de" className="bg-white text-stone-900">DE</option>
+              </select>
             </div>
             <button onClick={onOpenSettings} className="font-semibold hover:text-stone-900 cursor-pointer">{t.settingsLabel}</button>
           </div>

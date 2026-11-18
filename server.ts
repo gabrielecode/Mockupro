@@ -152,8 +152,11 @@ app.post("/api/mockup/generate", async (req, res) => {
         },
       });
 
+      const geminiModel =
+        model && !model.includes("/") ? model : "gemini-3.1-flash-lite-image";
+
       const response = await customAi.models.generateContent({
-        model: model || "gemini-2.5-flash-image",
+        model: geminiModel,
         contents: {
           parts: [
             {
@@ -166,6 +169,11 @@ app.post("/api/mockup/generate", async (req, res) => {
               text: promptText,
             },
           ],
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: "1:1",
+          },
         },
       });
 
