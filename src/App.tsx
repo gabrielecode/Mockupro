@@ -17,7 +17,10 @@ import {
   X,
   Globe,
   ArrowLeft,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Share2,
+  Link2,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
@@ -114,7 +117,30 @@ export default function App() {
 
   const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>([]);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
+  const [openShareMenuId, setOpenShareMenuId] = useState<string | null>(null);
+  const [sharedLinks, setSharedLinks] = useState<Record<string, string>>({});
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!openShareMenuId) return;
+    const handleOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest("[data-share-menu]")) {
+        setOpenShareMenuId(null);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenShareMenuId(null);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [openShareMenuId]);
 
   useEffect(() => {
     const selectedProd = PRODUCT_TYPES.find((p) => p.id === productType);
@@ -415,6 +441,128 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     link.href = url;
     link.download = `Mockup-Pro-${productType}-${id}.png`;
     link.click();
+  };
+
+  const getOrCreateShareUrl = async (dataUrl: string): Promise<string> => {
+    if (sharedLinks[dataUrl]) {
+      return sharedLinks[dataUrl];
+    }
+
+    const parts = dataUrl.split(",");
+    const base64Data = parts.length > 1 ? parts[1] : parts[0];
+    const mimeMatch = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+
+    try {
+      const res = await fetch("/api/mockup/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64Image: base64Data, mimeType })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.url) {
+          const fullUrl = new URL(data.url, window.location.origin).toString();
+          setSharedLinks((prev) => ({ ...prev, [dataUrl]: fullUrl }));
+          return fullUrl;
+        }
+      }
+    } catch (err) {
+      console.warn("Falling back to data URL for sharing:", err);
+    }
+
+    return dataUrl;
+  };
+
+  const copyTextToClipboard = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  };
+
+  const handleCopyShareLink = async (scenarioId: string) => {
+    const dataUrl = generatedMockups[scenarioId];
+    if (!dataUrl) return;
+
+    setSharingId(scenarioId);
+    try {
+      const shareUrl = await getOrCreateShareUrl(dataUrl);
+      await copyTextToClipboard(shareUrl);
+      setCopiedId(scenarioId);
+      setFeedbackMessage({ type: "success", text: t.linkCopied });
+      setTimeout(() => {
+        setCopiedId((prev) => (prev === scenarioId ? null : prev));
+      }, 2000);
+      setOpenShareMenuId(null);
+    } catch (err) {
+      console.error("Failed to copy image link:", err);
+      setFeedbackMessage({ type: "error", text: t.shareError });
+    } finally {
+      setSharingId(null);
+    }
+  };
+
+  const handleNativeShare = async (scenario: Scenario) => {
+    const dataUrl = generatedMockups[scenario.id];
+    if (!dataUrl) return;
+
+    setSharingId(scenario.id);
+    try {
+      const shareUrl = await getOrCreateShareUrl(dataUrl);
+      const blobRes = await fetch(dataUrl);
+      const blob = await blobRes.blob();
+      const file = new File([blob], `mockup-${productType}-${scenario.id}.png`, {
+        type: blob.type || "image/png"
+      });
+
+      if (typeof navigator.share === "function") {
+        if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: scenario.label,
+            text: `${scenario.label} — ${t.brandTitle}`,
+            files: [file]
+          });
+        } else {
+          await navigator.share({
+            title: scenario.label,
+            text: `${scenario.label} — ${t.brandTitle}`,
+            url: shareUrl
+          });
+        }
+        setOpenShareMenuId(null);
+      } else {
+        await copyTextToClipboard(shareUrl);
+        setCopiedId(scenario.id);
+        setFeedbackMessage({ type: "success", text: t.linkCopied });
+        setTimeout(() => {
+          setCopiedId((prev) => (prev === scenario.id ? null : prev));
+        }, 2000);
+        setOpenShareMenuId(null);
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        console.error("Native share failed:", err);
+        try {
+          const fallbackUrl = await getOrCreateShareUrl(dataUrl);
+          await copyTextToClipboard(fallbackUrl);
+          setFeedbackMessage({ type: "info", text: t.linkCopied });
+          setOpenShareMenuId(null);
+        } catch {
+          setFeedbackMessage({ type: "error", text: t.shareError });
+        }
+      }
+    } finally {
+      setSharingId(null);
+    }
   };
 
   // Grouped products for dropdown separator
@@ -836,9 +984,9 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                 {dynamicScenarios.map((scenario) => (
                   <div
                     key={scenario.id}
-                    className="bg-white rounded-2xl border border-stone-200 overflow-hidden group shadow-xs flex flex-col hover:border-orange-400/40 transition-all duration-300"
+                    className="bg-white rounded-2xl border border-stone-200 group shadow-xs flex flex-col hover:border-orange-400/40 transition-all duration-300"
                   >
-                    <div className="aspect-square bg-stone-50 flex items-center justify-center relative overflow-hidden">
+                    <div className="aspect-square bg-stone-50 rounded-t-2xl flex items-center justify-center relative overflow-hidden">
                       {loadingStates[scenario.id] ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 size={28} className="animate-spin text-[#F1641E]" />
@@ -859,20 +1007,78 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                         </div>
                       )}
                     </div>
-                    <div className="p-4 flex items-center justify-between border-t border-stone-100 bg-white">
-                      <div>
-                        <h5 className="font-bold text-xs text-stone-900">{scenario.label}</h5>
-                        <p className="text-[10px] text-stone-500 mt-0.5">{productColor}</p>
+                    <div className="p-4 rounded-b-2xl flex items-center justify-between gap-2 border-t border-stone-100 bg-white">
+                      <div className="min-w-0">
+                        <h5 className="font-bold text-xs text-stone-900 truncate">{scenario.label}</h5>
+                        <p className="text-[10px] text-stone-500 mt-0.5 truncate">{productColor}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {generatedMockups[scenario.id] && (
-                          <button
-                            onClick={() => downloadImage(generatedMockups[scenario.id], scenario.id)}
-                            className="p-2 rounded-xl bg-stone-50 hover:bg-[#FFF2EB] text-stone-700 hover:text-[#F1641E] border border-stone-200 transition-colors cursor-pointer"
-                            title="Scarica Immagine"
-                          >
-                            <Download size={14} />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => downloadImage(generatedMockups[scenario.id], scenario.id)}
+                              className="p-2 rounded-xl bg-stone-50 hover:bg-[#FFF2EB] text-stone-700 hover:text-[#F1641E] border border-stone-200 transition-colors cursor-pointer"
+                              title="Scarica Immagine"
+                            >
+                              <Download size={14} />
+                            </button>
+                            <div className="relative" data-share-menu>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenShareMenuId((prev) => (prev === scenario.id ? null : scenario.id))
+                                }
+                                disabled={sharingId === scenario.id}
+                                aria-expanded={openShareMenuId === scenario.id}
+                                aria-haspopup="menu"
+                                title={t.shareBtn}
+                                className={`px-2.5 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                                  openShareMenuId === scenario.id || copiedId === scenario.id
+                                    ? "bg-[#FFF2EB] text-[#F1641E] border-orange-200"
+                                    : "bg-stone-50 hover:bg-[#FFF2EB] text-stone-700 hover:text-[#F1641E] border-stone-200"
+                                }`}
+                              >
+                                {sharingId === scenario.id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : copiedId === scenario.id ? (
+                                  <Check size={13} />
+                                ) : (
+                                  <Share2 size={13} />
+                                )}
+                                <span>{t.shareBtn}</span>
+                              </button>
+
+                              {openShareMenuId === scenario.id && (
+                                <div
+                                  role="menu"
+                                  className="absolute bottom-full right-0 mb-2 w-52 bg-white border border-stone-200 rounded-xl shadow-lg p-1.5 z-30 flex flex-col gap-1"
+                                >
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => handleCopyShareLink(scenario.id)}
+                                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
+                                  >
+                                    {copiedId === scenario.id ? (
+                                      <Check size={14} className="text-emerald-600 shrink-0" />
+                                    ) : (
+                                      <Link2 size={14} className="shrink-0" />
+                                    )}
+                                    <span>{t.copyImageLink}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => handleNativeShare(scenario)}
+                                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Share2 size={14} className="shrink-0" />
+                                    <span>{t.nativeShare}</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
                         )}
                         <button
                           onClick={() => generateMockup(scenario)}

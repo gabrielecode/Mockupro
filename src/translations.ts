@@ -106,7 +106,12 @@ export const translations: Record<string, Record<string, string>> = {
     navFaq: "FAQ",
     studioBtn: "Studio",
     heroImageAlt: "Mockup Studio Hero Showcase",
-    mockupOutputAlt: "Photorealistic Mockup Output"
+    mockupOutputAlt: "Photorealistic Mockup Output",
+    shareBtn: "Condividi",
+    copyImageLink: "Copia link immagine",
+    nativeShare: "Condividi tramite dispositivo",
+    linkCopied: "Link immagine copiato negli appunti!",
+    shareError: "Impossibile condividere il mockup."
   },
   en: {
     brandTitle: "MockupStudio Pro",
@@ -215,7 +220,12 @@ export const translations: Record<string, Record<string, string>> = {
     navFaq: "FAQ",
     studioBtn: "Studio",
     heroImageAlt: "Mockup Studio Hero Showcase",
-    mockupOutputAlt: "Photorealistic Mockup Output"
+    mockupOutputAlt: "Photorealistic Mockup Output",
+    shareBtn: "Share",
+    copyImageLink: "Copy image link",
+    nativeShare: "Share via device",
+    linkCopied: "Image link copied to clipboard!",
+    shareError: "Unable to share mockup."
   },
   es: {
     brandTitle: "MockupStudio Pro",
@@ -324,7 +334,12 @@ export const translations: Record<string, Record<string, string>> = {
     navFaq: "FAQ",
     studioBtn: "Estudio",
     heroImageAlt: "Escaparate principal de Mockup Studio",
-    mockupOutputAlt: "Salida de maqueta fotorrealista"
+    mockupOutputAlt: "Salida de maqueta fotorrealista",
+    shareBtn: "Compartir",
+    copyImageLink: "Copiar enlace de imagen",
+    nativeShare: "Compartir con dispositivo",
+    linkCopied: "¡Enlace de imagen copiado al portapapeles!",
+    shareError: "No se pudo compartir la maqueta."
   },
   fr: {
     brandTitle: "MockupStudio Pro",
@@ -433,7 +448,12 @@ export const translations: Record<string, Record<string, string>> = {
     navFaq: "FAQ",
     studioBtn: "Studio",
     heroImageAlt: "Vitrine principale Mockup Studio",
-    mockupOutputAlt: "Rendu de mockup photoréaliste"
+    mockupOutputAlt: "Rendu de mockup photoréaliste",
+    shareBtn: "Partager",
+    copyImageLink: "Copier le lien de l'image",
+    nativeShare: "Partager via l'appareil",
+    linkCopied: "Lien de l'image copié dans le presse-papiers !",
+    shareError: "Impossible de partager le mockup."
   },
   de: {
     brandTitle: "MockupStudio Pro",
@@ -542,6 +562,11 @@ export const translations: Record<string, Record<string, string>> = {
     navFaq: "FAQ",
     studioBtn: "Studio",
     heroImageAlt: "Mockup Studio Hero-Präsentation",
-    mockupOutputAlt: "Fotorealistisches Mockup-Ergebnis"
+    mockupOutputAlt: "Fotorealistisches Mockup-Ergebnis",
+    shareBtn: "Teilen",
+    copyImageLink: "Bildlink kopieren",
+    nativeShare: "Über Gerät teilen",
+    linkCopied: "Bildlink in die Zwischenablage kopiert!",
+    shareError: "Mockup konnte nicht geteilt werden."
   }
 };

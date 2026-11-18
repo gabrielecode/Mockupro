@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import crypto from "crypto";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
@@ -206,6 +207,63 @@ app.post("/api/mockup/generate", async (req, res) => {
       error: error?.message || "Internal server error occurred.",
     });
   }
+});
+
+// In-memory store for shareable direct mockup image links (max 100 items, 24h TTL)
+const sharedImagesMap = new Map<string, { buffer: Buffer; mimeType: string; createdAt: number }>();
+
+app.post("/api/mockup/share", (req, res) => {
+  try {
+    const { base64Image, mimeType = "image/png" } = req.body || {};
+    const validMimeTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!validMimeTypes.includes(mimeType)) {
+      return res.status(400).json({ error: "Invalid mimeType." });
+    }
+    if (!base64Image || typeof base64Image !== "string") {
+      return res.status(400).json({ error: "Missing base64Image data." });
+    }
+
+    const buffer = Buffer.from(base64Image, "base64");
+    if (buffer.length === 0 || buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: "Invalid image size." });
+    }
+
+    // Evict expired or oldest entries if capacity reached
+    const now = Date.now();
+    for (const [key, entry] of sharedImagesMap.entries()) {
+      if (now - entry.createdAt > 24 * 60 * 60 * 1000) {
+        sharedImagesMap.delete(key);
+      }
+    }
+    if (sharedImagesMap.size >= 100) {
+      const oldestKey = sharedImagesMap.keys().next().value;
+      if (oldestKey) sharedImagesMap.delete(oldestKey);
+    }
+
+    const id = crypto.randomBytes(8).toString("hex");
+    sharedImagesMap.set(id, { buffer, mimeType, createdAt: now });
+
+    const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+    return res.json({
+      success: true,
+      id,
+      url: `/api/mockup/share/${id}.${ext}`,
+    });
+  } catch (err) {
+    console.error("Error creating share link:", err);
+    return res.status(500).json({ error: "Failed to create share link." });
+  }
+});
+
+app.get("/api/mockup/share/:filename", (req, res) => {
+  const id = req.params.filename.replace(/\.(png|jpg|jpeg|webp)$/i, "");
+  const entry = sharedImagesMap.get(id);
+  if (!entry) {
+    return res.status(404).send("Mockup image not found or expired.");
+  }
+  res.setHeader("Content-Type", entry.mimeType);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  return res.send(entry.buffer);
 });
 
 // Configure Vite middleware or index.html serving
