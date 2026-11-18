@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X } from "lucide-react";
 import { translations } from "../translations";
 import { PRODUCT_TYPES } from "../data/products";
-import heroImg from "../assets/images/mockup_studio_hero_1794995342264.jpg";
+import heroImg from "../assets/images/mockup_studio_hero_1794995342264.webp";
 
 interface LandingPageProps {
   lang: string;
@@ -278,7 +278,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* From Logo to Mockup Section (bg-white & border-t on outer section) */}
+      {/* From Logo to Mockup Section */}
       <section className="bg-white border-t border-stone-200 py-20">
         <div className="max-w-[1440px] mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
@@ -325,6 +325,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <img
                   src={heroImg}
                   alt={t.mockupOutputAlt}
+                  loading="lazy"
                   referrerPolicy="no-referrer"
                   className="w-full h-auto object-cover aspect-square"
                 />
@@ -374,7 +375,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Features Section (#features) - bg-white & border-t on outer section */}
+      {/* Features Section (#features) */}
       <section id="features" className="bg-white border-t border-stone-200 py-20">
         <div className="max-w-[1440px] mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
