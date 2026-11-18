@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X } from "lucide-react";
 import { translations } from "../translations";
 import { PRODUCT_TYPES } from "../data/products";
 import heroImg from "../assets/images/mockup_studio_hero_1794995342264.jpg";
@@ -19,16 +19,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const t = translations[lang] || translations.it;
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
   const categoriesList = [
-    { key: "Abbigliamento & Moda", label: t.catApparel, icon: Layers, sample: "T-Shirt, Hoodies, Cap, Tote Bags" },
-    { key: "Packaging & Scatole", label: t.catPackaging, icon: Package, sample: "Scatole, Flaconi, Bottiglie" },
-    { key: "Casa & Arredamento", label: t.catHome, icon: Store, sample: "Tazze, Borracce, Cuscini" },
-    { key: "Cancelleria & Arte", label: t.catStationery, icon: Globe, sample: "Poster, Quaderni, Sticker" }
+    { key: "Abbigliamento & Moda", label: t.catApparel, icon: Layers, sample: t.catApparelSample },
+    { key: "Packaging & Scatole", label: t.catPackaging, icon: Package, sample: t.catPackagingSample },
+    { key: "Casa & Arredamento", label: t.catHome, icon: Store, sample: t.catHomeSample },
+    { key: "Cancelleria & Arte", label: t.catStationery, icon: Globe, sample: t.catStationerySample }
   ];
 
   const faqs = [
@@ -39,10 +40,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     { q: t.faq5Q, a: t.faq5A }
   ];
 
+  const languageLabels: Record<string, string> = {
+    it: "Italiano",
+    en: "English",
+    es: "Español",
+    fr: "Français",
+    de: "Deutsch"
+  };
+
   return (
-    <div className="min-h-screen bg-[#FCFAF7] text-stone-900 font-sans selection:bg-orange-100 selection:text-orange-900">
+    <div className="min-h-screen bg-[#FCFAF7] text-stone-900 font-sans selection:bg-orange-100 selection:text-orange-900 relative">
       {/* Sticky Header with Blur */}
-      <header className="sticky top-0 z-50 bg-[#FCFAF7]/90 backdrop-blur-md border-b border-stone-200/80 transition-all">
+      <header className="sticky top-0 z-50 bg-[#FCFAF7]/90 backdrop-blur-md border-b border-stone-200/85 transition-all">
         <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between gap-8">
           <div className="flex items-center gap-2.5">
             <div className="bg-[#FFF2EB] p-2 rounded-xl border border-orange-200">
@@ -58,7 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {t.navHow}
             </a>
             <a href="#catalog" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
-              {t.whatYouCanMockupTitle}
+              {t.navProducts}
             </a>
             <a href="#features" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
               {t.navFeatures}
@@ -67,18 +76,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {t.navMarketplaces}
             </a>
             <a href="#faq" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
-              FAQ
+              {t.navFaq}
             </a>
           </nav>
 
           <div className="flex items-center gap-3 shrink-0">
             {/* Language Selector */}
-            <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
+            <div className="hidden sm:flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
               <Globe size={13} className="text-stone-500 ml-1" />
               {(["it", "en", "es", "fr", "de"] as const).map((l) => (
                 <button
                   key={l}
                   onClick={() => setLang(l)}
+                  aria-label={languageLabels[l]}
                   className={`px-2 py-1 rounded transition-colors uppercase ${
                     lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
                   }`}
@@ -94,8 +104,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             >
               {t.getStarted} <ArrowRight size={14} />
             </button>
+
+            {/* Hamburger button for mobile (< md) */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-700 hover:bg-stone-200 transition-colors cursor-pointer"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 w-full bg-[#FCFAF7] border-b border-stone-200 shadow-xl px-6 py-6 flex flex-col gap-4 font-medium text-stone-700 z-50">
+            <a
+              href="#how"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.navHow}
+            </a>
+            <a
+              href="#catalog"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.navProducts}
+            </a>
+            <a
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.navFeatures}
+            </a>
+            <a
+              href="#marketplaces"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.navMarketplaces}
+            </a>
+            <a
+              href="#faq"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2"
+            >
+              {t.navFaq}
+            </a>
+
+            <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
+              <span className="text-xs text-stone-500 font-semibold uppercase">Lingua</span>
+              <div className="flex items-center gap-1 bg-stone-100 border border-stone-200 rounded-lg p-1 text-xs font-semibold">
+                {(["it", "en", "es", "fr", "de"] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => {
+                      setLang(l);
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-label={languageLabels[l]}
+                    className={`px-2 py-1 rounded transition-colors uppercase ${
+                      lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -151,7 +232,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-xl bg-white">
             <img
               src={heroImg}
-              alt="Mockup Studio Hero Showcase"
+              alt={t.heroImageAlt}
               referrerPolicy="no-referrer"
               className="w-full h-auto object-cover aspect-video"
             />
@@ -197,57 +278,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* From Logo to Mockup Section */}
-      <section className="max-w-[1440px] mx-auto px-6 py-20 bg-white border-t border-stone-200">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFF2EB] border border-orange-200 text-[#F1641E] text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles size={14} /> AI Transformation
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 mb-4">
-            {t.compareTitle}
-          </h2>
-          <p className="text-stone-600 text-sm">
-            {t.compareSubtitle}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 items-center">
-          {/* Left: Flat Logo (Inline SVG) */}
-          <div className="lg:col-span-5 bg-stone-50 border border-stone-200 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xs relative">
-            <div className="absolute top-4 left-4 bg-stone-200 text-stone-700 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-              {t.logoSideLabel}
+      {/* From Logo to Mockup Section (bg-white & border-t on outer section) */}
+      <section className="bg-white border-t border-stone-200 py-20">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFF2EB] border border-orange-200 text-[#F1641E] text-xs font-bold uppercase tracking-wider mb-4">
+              <Sparkles size={14} /> {t.aiTransformation}
             </div>
-            <div className="w-64 h-64 bg-stone-900 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-stone-800 p-6 my-6">
-              <svg viewBox="0 0 200 200" className="w-28 h-28 text-[#F1641E]">
-                <circle cx="100" cy="80" r="45" fill="none" stroke="currentColor" strokeWidth="8" />
-                <circle cx="100" cy="80" r="12" fill="#FFF9F5" />
-                <text x="100" y="155" textAnchor="middle" fill="#FCFAF7" fontSize="16" fontFamily="monospace" fontWeight="bold">STUDIO LAB</text>
-              </svg>
-            </div>
-            <p className="text-xs text-stone-500 font-medium text-center">Trasparenza PNG o Vettore SVG</p>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 mb-4">
+              {t.compareTitle}
+            </h2>
+            <p className="text-stone-600 text-sm">
+              {t.compareSubtitle}
+            </p>
           </div>
 
-          {/* Center: Arrow (Vertical on mobile, horizontal on desktop) */}
-          <div className="lg:col-span-1 flex items-center justify-center py-4 lg:py-0">
-            <div className="w-12 h-12 rounded-full bg-[#FFF2EB] border border-orange-200 flex items-center justify-center text-[#F1641E] shadow-sm rotate-90 lg:rotate-0">
-              <ArrowRight size={22} />
+          <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 items-center">
+            {/* Left: Flat Logo (Inline SVG) */}
+            <div className="lg:col-span-5 bg-stone-50 border border-stone-200 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xs relative">
+              <div className="absolute top-4 left-4 bg-stone-200 text-stone-700 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
+                {t.logoSideLabel}
+              </div>
+              <div className="w-64 h-64 bg-stone-900 rounded-2xl flex flex-col items-center justify-center shadow-inner border border-stone-800 p-6 my-6">
+                <svg viewBox="0 0 200 200" className="w-28 h-28 text-[#F1641E]">
+                  <circle cx="100" cy="80" r="45" fill="none" stroke="currentColor" strokeWidth="8" />
+                  <circle cx="100" cy="80" r="12" fill="#FFF9F5" />
+                  <text x="100" y="155" textAnchor="middle" fill="#FCFAF7" fontSize="16" fontFamily="monospace" fontWeight="bold">STUDIO LAB</text>
+                </svg>
+              </div>
+              <p className="text-xs text-stone-500 font-medium text-center">{t.transparencyLabel}</p>
             </div>
-          </div>
 
-          {/* Right: Final Mockup Image */}
-          <div className="lg:col-span-5 bg-stone-50 border border-stone-200 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xs relative">
-            <div className="absolute top-4 left-4 bg-[#FFF2EB] text-[#F1641E] text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border border-orange-200">
-              {t.mockupSideLabel}
+            {/* Center: Arrow (Vertical on mobile, horizontal on desktop) */}
+            <div className="lg:col-span-1 flex items-center justify-center py-4 lg:py-0">
+              <div className="w-12 h-12 rounded-full bg-[#FFF2EB] border border-orange-200 flex items-center justify-center text-[#F1641E] shadow-sm rotate-90 lg:rotate-0">
+                <ArrowRight size={22} />
+              </div>
             </div>
-            <div className="w-full rounded-xl overflow-hidden border border-stone-200 shadow-md my-6">
-              <img
-                src={heroImg}
-                alt="Photorealistic Mockup Output"
-                referrerPolicy="no-referrer"
-                className="w-full h-auto object-cover aspect-square"
-              />
+
+            {/* Right: Final Mockup Image */}
+            <div className="lg:col-span-5 bg-stone-50 border border-stone-200 rounded-2xl p-8 flex flex-col items-center justify-center shadow-xs relative">
+              <div className="absolute top-4 left-4 bg-[#FFF2EB] text-[#F1641E] text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border border-orange-200">
+                {t.mockupSideLabel}
+              </div>
+              <div className="w-full rounded-xl overflow-hidden border border-stone-200 shadow-md my-6">
+                <img
+                  src={heroImg}
+                  alt={t.mockupOutputAlt}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-auto object-cover aspect-square"
+                />
+              </div>
+              <p className="text-xs text-stone-500 font-medium text-center">{t.renderOutputLabel}</p>
             </div>
-            <p className="text-xs text-stone-500 font-medium text-center">Render 1K con illuminazione da studio e texture reali</p>
           </div>
         </div>
       </section>
@@ -282,7 +365,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     onClick={onEnterStudio}
                     className="text-xs font-bold text-stone-700 hover:text-[#F1641E] flex items-center gap-1 cursor-pointer"
                   >
-                    Studio <ArrowRight size={12} />
+                    {t.studioBtn} <ArrowRight size={12} />
                   </button>
                 </div>
               </div>
@@ -291,64 +374,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Features Section (#features) - 6 Cards */}
-      <section id="features" className="max-w-[1440px] mx-auto px-6 py-20 border-t border-stone-200 bg-white">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 mb-4">
-            {t.featuresTitle}
-          </h2>
-          <p className="text-stone-600 text-sm">
-            {t.featuresSubtitle}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <Sparkles size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature1Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature1Desc}</p>
+      {/* Features Section (#features) - bg-white & border-t on outer section */}
+      <section id="features" className="bg-white border-t border-stone-200 py-20">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 mb-4">
+              {t.featuresTitle}
+            </h2>
+            <p className="text-stone-600 text-sm">
+              {t.featuresSubtitle}
+            </p>
           </div>
 
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <Wand2 size={22} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <Sparkles size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature1Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature1Desc}</p>
             </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature2Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature2Desc}</p>
-          </div>
 
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <Type size={22} />
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <Wand2 size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature2Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature2Desc}</p>
             </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature3Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature3Desc}</p>
-          </div>
 
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <LayoutGrid size={22} />
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <Type size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature3Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature3Desc}</p>
             </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature4Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature4Desc}</p>
-          </div>
 
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <FolderArchive size={22} />
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <LayoutGrid size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature4Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature4Desc}</p>
             </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature5Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature5Desc}</p>
-          </div>
 
-          <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
-              <Globe size={22} />
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <FolderArchive size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature5Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature5Desc}</p>
             </div>
-            <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature6Title}</h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{t.feature6Desc}</p>
+
+            <div className="bg-[#FCFAF7] border border-stone-200 rounded-2xl p-8 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center mb-6 text-[#F1641E]">
+                <Globe size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900 mb-2">{t.feature6Title}</h3>
+              <p className="text-stone-600 text-sm leading-relaxed">{t.feature6Desc}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -404,6 +489,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <button
                   onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                  aria-expanded={isOpen}
                   className="w-full p-6 text-left flex items-center justify-between gap-4 font-bold text-stone-900 text-sm md:text-base cursor-pointer hover:bg-stone-50 transition-colors"
                 >
                   <span>{faq.q}</span>
@@ -462,10 +548,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Column 2: Navigation Links */}
           <div className="flex flex-wrap justify-center gap-6 font-medium text-stone-600">
             <a href="#how" className="hover:text-stone-900 transition-colors">{t.navHow}</a>
-            <a href="#catalog" className="hover:text-stone-900 transition-colors">{t.whatYouCanMockupTitle}</a>
+            <a href="#catalog" className="hover:text-stone-900 transition-colors">{t.navProducts}</a>
             <a href="#features" className="hover:text-stone-900 transition-colors">{t.navFeatures}</a>
             <a href="#marketplaces" className="hover:text-stone-900 transition-colors">{t.navMarketplaces}</a>
-            <a href="#faq" className="hover:text-stone-900 transition-colors">FAQ</a>
+            <a href="#faq" className="hover:text-stone-900 transition-colors">{t.navFaq}</a>
           </div>
 
           {/* Column 3: Language & Settings */}
@@ -476,6 +562,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <button
                   key={l}
                   onClick={() => setLang(l)}
+                  aria-label={languageLabels[l]}
                   className={`px-2 py-1 rounded transition-colors uppercase ${
                     lang === l ? "bg-white text-stone-900 shadow-xs font-bold" : "text-stone-500 hover:text-stone-900"
                   }`}
