@@ -1,0 +1,8 @@
+{
+  "name": "Etsy Mockup Studio Pro",
+  "description": "Premium multi-mockup generation engine optimized for Etsy sellers with advanced graphic placement, custom text overlays, and AI-powered photorealistic rendering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
