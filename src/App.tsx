@@ -81,15 +81,51 @@ interface FeedbackMessage {
 
 export default function App() {
   const [viewMode, setViewMode] = useState<"landing" | "studio">("landing");
-  const [lang, setLang] = useState<string>("it");
+  const [lang, setLang] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mockup_lang") || "it";
+    } catch {
+      return "it";
+    }
+  });
   const t = translations[lang] || translations.it;
 
   // Settings & AI provider state
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [aiProvider, setAiProvider] = useState<string>("gemini"); // "gemini" or "openrouter"
+  const [aiProvider, setAiProvider] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mockup_provider") || "gemini";
+    } catch {
+      return "gemini";
+    }
+  }); // "gemini" or "openrouter"
   const [openrouterApiKey, setOpenrouterApiKey] = useState<string>("");
   const [geminiApiKey, setGeminiApiKey] = useState<string>("");
-  const [openrouterModel, setOpenrouterModel] = useState<string>("google/gemini-2.5-flash-image");
+  const [openrouterModel, setOpenrouterModel] = useState<string>(() => {
+    try {
+      return localStorage.getItem("mockup_or_model") || "google/gemini-2.5-flash-image";
+    } catch {
+      return "google/gemini-2.5-flash-image";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("mockup_lang", lang);
+    } catch {}
+  }, [lang]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("mockup_provider", aiProvider);
+    } catch {}
+  }, [aiProvider]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("mockup_or_model", openrouterModel);
+    } catch {}
+  }, [openrouterModel]);
 
   // Studio generator state
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -166,7 +202,7 @@ export default function App() {
       img.onload = () => {
         try {
           const canvas = document.createElement("canvas");
-          const SIZE = isFinalExport ? 1024 : 200;
+          const SIZE = isFinalExport ? 768 : 200;
           canvas.width = SIZE;
           canvas.height = SIZE;
           const ctx = canvas.getContext("2d");
@@ -276,7 +312,15 @@ export default function App() {
             ctx.fillText(customText.toUpperCase(), x + w / 2, textY);
           }
 
-          resolve(canvas.toDataURL("image/png"));
+          let exported = canvas.toDataURL("image/png");
+          // Keep payload well under Vercel's 4.5MB serverless body limit while keeping alpha transparency
+          if (isFinalExport && exported.length > 2_200_000) {
+            const webpData = canvas.toDataURL("image/webp", 0.9);
+            if (webpData.startsWith("data:image/webp")) {
+              exported = webpData;
+            }
+          }
+          resolve(exported);
         } catch (error) {
           console.error("Canvas composite failed safely:", error);
           resolve("");
@@ -310,7 +354,13 @@ export default function App() {
 
     try {
       const compositeDataUrl = await compositeAndOptimizeImage(userImage, true);
+      const mimeMatch = compositeDataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+      const exportMimeType = mimeMatch ? mimeMatch[1] : "image/png";
       const optimizedBase64 = compositeDataUrl.split(",")[1];
+
+      if (!optimizedBase64) {
+        throw new Error("Impossibile elaborare l'immagine caricata.");
+      }
 
       const selectedProd = PRODUCT_TYPES.find((p) => p.id === productType);
       const selectedProdLabel = selectedProd?.label || "Prodotto";
@@ -346,7 +396,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         body: JSON.stringify({
           promptText,
           base64Image: optimizedBase64,
-          mimeType: "image/png",
+          mimeType: exportMimeType,
           provider: aiProvider,
           apiKey: aiProvider === "openrouter" ? openrouterApiKey : geminiApiKey,
           model: aiProvider === "openrouter" ? openrouterModel : undefined
@@ -355,13 +405,26 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
       let errorText = "La chiamata API ha fallito";
       if (!response.ok) {
-        try {
-          const errorData = await response.json();
-          errorText = errorData.error || errorText;
-        } catch {
+        if (response.status === 404) {
+          errorText = "Endpoint API non trovato (404). Verifica che le Serverless Functions in /api siano attive sul deploy.";
+        } else if (response.status === 413) {
+          errorText = "Immagine troppo pesante per il server (413). Prova con un file più leggero.";
+        } else if (response.status === 504) {
+          errorText = "Timeout del server (504). Il modello AI sta impiegando troppo tempo: riprova.";
+        } else {
           try {
-            errorText = await response.text();
-          } catch {}
+            const errorData = await response.json();
+            errorText = errorData.error || errorText;
+          } catch {
+            try {
+              const rawText = await response.text();
+              if (rawText && !rawText.trim().startsWith("<")) {
+                errorText = rawText;
+              } else {
+                errorText = `Errore HTTP ${response.status} dal server API.`;
+              }
+            } catch {}
+          }
         }
         throw new Error(errorText);
       }
@@ -369,7 +432,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
       let result: any;
       try {
         result = await response.json();
-      } catch (jsonErr) {
+      } catch {
         throw new Error("Impossibile analizzare la risposta del server.");
       }
 
@@ -403,9 +466,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
   const generateAllMockups = async () => {
     if (!userImage) return;
-    setFeedbackMessage({ type: "info", text: "Generazione simultanea di tutti i mockup avviata..." });
-    const promises = dynamicScenarios.map((s) => generateMockup(s));
-    await Promise.all(promises);
+    setFeedbackMessage({ type: "info", text: "Generazione dei mockup avviata (2 alla volta per stabilità)..." });
+    const concurrency = 2;
+    for (let i = 0; i < dynamicScenarios.length; i += concurrency) {
+      const batch = dynamicScenarios.slice(i, i + concurrency);
+      await Promise.all(batch.map((s) => generateMockup(s)));
+    }
   };
 
   const downloadAllAsZip = async () => {
@@ -423,10 +489,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
       });
 
       const content = await zip.generateAsync({ type: "blob" });
+      const blobUrl = URL.createObjectURL(content);
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
+      link.href = blobUrl;
       link.download = `Mockup-Pack-${productType}-${Date.now()}.zip`;
       link.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       setFeedbackMessage({ type: "success", text: "Pacchetto ZIP scaricato con successo!" });
     } catch (e: any) {
       console.error("Errore pacchetto ZIP:", e);
@@ -1190,7 +1258,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                         type="text"
                         value={openrouterModel}
                         onChange={(e) => setOpenrouterModel(e.target.value)}
-                        placeholder="google/gemini-2.5-flash"
+                        placeholder="google/gemini-2.5-flash-image"
                         className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
                       />
                     </div>
