@@ -559,9 +559,9 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         } else if (response.status === 429) {
           try {
             const errorData = await response.json();
-            errorText = errorData.error || "Limite giornaliero raggiunto";
+            errorText = errorData.error || t.dailyLimitReached;
           } catch {
-            errorText = "Limite giornaliero raggiunto";
+            errorText = t.dailyLimitReached;
           }
         } else if (response.status === 404) {
           errorText = "Endpoint API non trovato (404). Verifica che le Serverless Functions in /api siano attive sul deploy.";
@@ -1047,9 +1047,17 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                   : "bg-orange-50 border-orange-200 text-orange-850"
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <Info size={16} className="shrink-0 text-[#F1641E]" />
                 <span className="text-xs font-medium">{feedbackMessage.text}</span>
+                {(feedbackMessage.text.includes("Limite") || feedbackMessage.text === t.dailyLimitReached) && (
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="ml-2 px-3 py-1 bg-[#F1641E] hover:bg-[#D44E13] text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    {t.settingsTitle}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setFeedbackMessage(null)}
@@ -1508,69 +1516,43 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">Seleziona Provider IA</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setAiProvider("gemini")}
-                      className={`p-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
-                        aiProvider === "gemini" ? "bg-orange-50 border-[#F1641E] text-[#F1641E]" : "bg-stone-50 border-stone-200 text-stone-700"
-                      }`}
+                  <p className="text-xs text-stone-600 mb-2 leading-relaxed">
+                    {t.openrouterNotice}{" "}
+                    <a
+                      href="https://openrouter.ai/keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#F1641E] font-bold underline hover:text-[#D44E13]"
                     >
-                      Google Gemini (Default)
-                    </button>
-                    <button
-                      onClick={() => setAiProvider("openrouter")}
-                      className={`p-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
-                        aiProvider === "openrouter" ? "bg-orange-50 border-[#F1641E] text-[#F1641E]" : "bg-stone-50 border-stone-200 text-stone-700"
-                      }`}
-                    >
-                      OpenRouter AI
-                    </button>
-                  </div>
+                      openrouter.ai/keys
+                    </a>
+                  </p>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">{t.openrouterKey}</label>
+                  <input
+                    type="password"
+                    value={openrouterApiKey}
+                    onChange={(e) => setOpenrouterApiKey(e.target.value)}
+                    placeholder="sk-or-v1-..."
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
+                  />
                 </div>
-
-                {aiProvider === "openrouter" ? (
-                  <>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">{t.openrouterKey}</label>
-                      <input
-                        type="password"
-                        value={openrouterApiKey}
-                        onChange={(e) => setOpenrouterApiKey(e.target.value)}
-                        placeholder="sk-or-v1-..."
-                        className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">Modello OpenRouter</label>
-                      <input
-                        type="text"
-                        value={openrouterModel}
-                        onChange={(e) => setOpenrouterModel(e.target.value)}
-                        placeholder="google/gemini-2.5-flash-image"
-                        className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">{t.geminiKey} (Opzionale)</label>
-                    <input
-                      type="password"
-                      value={geminiApiKey}
-                      onChange={(e) => setGeminiApiKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">Modello OpenRouter</label>
+                  <input
+                    type="text"
+                    value={openrouterModel}
+                    onChange={(e) => setOpenrouterModel(e.target.value)}
+                    placeholder="google/gemini-2.5-flash-image"
+                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
+                  />
+                </div>
                 <div className="mt-4 p-3 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-600 space-y-1">
                   <p className="font-semibold text-stone-800 flex items-center gap-1.5">
                     <Info size={13} className="text-[#F1641E]" />
                     <span>Informativa Privacy & AI Provider</span>
                   </p>
                   <p className="leading-relaxed">
-                    Le immagini e i prompt vengono elaborati in tempo reale tramite le API di Google Gemini o OpenRouter conformemente al GDPR. Nessun dato viene ceduto a terzi. Leggi la{" "}
+                    Le immagini e i prompt vengono elaborati in tempo reale tramite OpenRouter conformemente al GDPR. Nessun dato viene ceduto a terzi. Leggi la{" "}
                     <button
                       type="button"
                       onClick={() => {
@@ -1591,7 +1573,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                   onClick={() => setShowSettings(false)}
                   className="px-5 py-2.5 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  {t.saveSettings}
+                  {t.unlimitedKeyBtn}
                 </button>
               </div>
             </div>

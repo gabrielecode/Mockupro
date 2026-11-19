@@ -66,7 +66,7 @@ export const translations: Record<string, Record<string, string>> = {
     faq3Q: "I mockup generati sono utilizzabili per uso commerciale?",
     faq3A: "Puoi usare i mockup generati nei tuoi negozi e cataloghi; l'uso commerciale segue i termini del provider AI scelto.",
     faq4Q: "Ho bisogno di una chiave API?",
-    faq4A: "Puoi iniziare immediatamente. L'applicazione funziona con i modelli integrati di Google Gemini Flash o collegando la tua chiave OpenRouter nelle impostazioni.",
+    faq4A: "Non serve: ogni utente registrato ha 15 generazioni gratuite al giorno; con una chiave OpenRouter personale non hai limiti.",
     faq5Q: "Come viene gestita la privacy delle mie immagini?",
     faq5A: "Le immagini vengono inviate al provider AI solo per generare il mockup e non le conserviamo sui nostri server.",
     ctaFinalTitle: "Pronto a rivoluzionare il tuo e-commerce?",
@@ -143,7 +143,10 @@ export const translations: Record<string, Record<string, string>> = {
     updatePasswordBtn: "Aggiorna password",
     passwordUpdatedSuccess: "Password aggiornata con successo!",
     passwordTooShort: "La password deve contenere almeno 6 caratteri.",
-    passwordUpdateError: "Errore durante l'aggiornamento della password. Riprova."
+    passwordUpdateError: "Errore durante l'aggiornamento della password. Riprova.",
+    openrouterNotice: "Hai una chiave OpenRouter? Inseriscila qui: generazioni illimitate (l'uso lo paghi tu su OpenRouter). Senza chiave hai 15 generazioni gratuite al giorno.",
+    unlimitedKeyBtn: "Generazioni illimitate: usa la tua chiave",
+    dailyLimitReached: "Limite giornaliero raggiunto"
   },
   en: {
     brandTitle: "MockupStudio Pro",
@@ -212,7 +215,7 @@ export const translations: Record<string, Record<string, string>> = {
     faq3Q: "Can I use generated mockups for commercial purposes?",
     faq3A: "You can use the generated mockups in your shops and catalogs; commercial use follows the terms of your chosen AI provider.",
     faq4Q: "Do I need an API key?",
-    faq4A: "You can start right away. The app supports built-in Google Gemini Flash models or connecting your own OpenRouter API key in settings.",
+    faq4A: "Not needed: every registered user has 15 free generations per day; with a personal OpenRouter key you have no limits.",
     faq5Q: "How is my image privacy handled?",
     faq5A: "Images are sent to the AI provider only to generate the mockup and we do not store them on our servers.",
     ctaFinalTitle: "Ready to revolutionize your e-commerce?",
@@ -289,7 +292,10 @@ export const translations: Record<string, Record<string, string>> = {
     updatePasswordBtn: "Update Password",
     passwordUpdatedSuccess: "Password successfully updated!",
     passwordTooShort: "Password must be at least 6 characters.",
-    passwordUpdateError: "Error updating password. Please try again."
+    passwordUpdateError: "Error updating password. Please try again.",
+    openrouterNotice: "Do you have an OpenRouter key? Enter it here: unlimited generations (you pay for usage on OpenRouter). Without a key, you have 15 free generations per day.",
+    unlimitedKeyBtn: "Unlimited generations: use your key",
+    dailyLimitReached: "Daily limit reached"
   },
   es: {
     brandTitle: "MockupStudio Pro",
@@ -358,7 +364,7 @@ export const translations: Record<string, Record<string, string>> = {
     faq3Q: "¿Se pueden usar los mockups para fines comerciales?",
     faq3A: "Puedes usar las maquetas generadas en tus tiendas y catálogos; el uso comercial sigue los términos del proveedor de IA elegido.",
     faq4Q: "¿Necesito una clave API?",
-    faq4A: "Puedes empezar de inmediato. La aplicación funciona con los modelos integrados de Google Gemini Flash o conectando tu propia clave de OpenRouter en los ajustes.",
+    faq4A: "No es necesario: cada usuario registrado tiene 15 generaciones gratuitas al día; con una clave personal de OpenRouter no tienes límites.",
     faq5Q: "¿Cómo se gestiona la privacidad de mis imágenes?",
     faq5A: "Las imágenes se envían al proveedor de IA solo para generar la maqueta y no las almacenamos en nuestros servidores.",
     ctaFinalTitle: "¿Listo para revolucionar tu comercio electrónico?",
@@ -435,7 +441,10 @@ export const translations: Record<string, Record<string, string>> = {
     updatePasswordBtn: "Actualizar contraseña",
     passwordUpdatedSuccess: "¡Contraseña actualizada con éxito!",
     passwordTooShort: "La contraseña debe tener al menos 6 caracteres.",
-    passwordUpdateError: "Error al actualizar la contraseña. Inténtalo de nuevo."
+    passwordUpdateError: "Error al actualizar la contraseña. Inténtalo de nuevo.",
+    openrouterNotice: "¿Tienes una clave de OpenRouter? Introdúcela aquí: generaciones ilimitadas (pagas el uso en OpenRouter). Sin clave, tienes 15 generaciones gratuitas al día.",
+    unlimitedKeyBtn: "Generaciones ilimitadas: usa tu clave",
+    dailyLimitReached: "Límite diario alcanzado"
   },
   fr: {
     brandTitle: "MockupStudio Pro",
@@ -504,7 +513,7 @@ export const translations: Record<string, Record<string, string>> = {
     faq3Q: "Les mockups générés sont-ils utilisables à des fins commerciales ?",
     faq3A: "Vous pouvez utiliser les mockups générés dans vos boutiques et catalogues ; l'utilisation commerciale suit les termes du fournisseur d'IA choisi.",
     faq4Q: "Ai-je besoin d'une clé API ?",
-    faq4A: "Vous pouvez commencer immédiatement. L'application fonctionne avec les modèles intégrés Google Gemini Flash ou en connectant votre clé OpenRouter dans les paramètres.",
+    faq4A: "Non nécessaire : chaque utilisateur enregistré dispose de 15 générations gratuites par jour ; avec une clé OpenRouter personnelle, vous n'avez aucune limite.",
     faq5Q: "Comment la confidentialité de mes images est-elle gérée ?",
     faq5A: "Les images sont envoyées au fournisseur d'IA uniquement pour générer le mockup et nous ne les conservons pas sur nos serveurs.",
     ctaFinalTitle: "Prêt à révolutionner votre e-commerce ?",
@@ -581,7 +590,10 @@ export const translations: Record<string, Record<string, string>> = {
     updatePasswordBtn: "Mettre à jour le mot de passe",
     passwordUpdatedSuccess: "Mot de passe mis à jour avec succès !",
     passwordTooShort: "Le mot de passe doit comporter au moins 6 caractères.",
-    passwordUpdateError: "Erreur lors de la mise à jour du mot de passe. Veuillez réessayer."
+    passwordUpdateError: "Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.",
+    openrouterNotice: "Vous avez une clé OpenRouter ? Entrez-la ici : générations illimitées (vous payez l'utilisation sur OpenRouter). Sans clé, vous avez 15 générations gratuites par jour.",
+    unlimitedKeyBtn: "Générations illimitées : utilisez votre clé",
+    dailyLimitReached: "Limite quotidienne atteinte"
   },
   de: {
     brandTitle: "MockupStudio Pro",
@@ -650,7 +662,7 @@ export const translations: Record<string, Record<string, string>> = {
     faq3Q: "Sind die generierten Mockups für kommerzielle Zwecke nutzbar?",
     faq3A: "Sie können die generierten Mockups in Ihren Shops und Katalogen verwenden; die kommerzielle Nutzung richtet sich nach den Bedingungen des gewählten KI-Anbieters.",
     faq4Q: "Benötige ich einen API-Schlüssel?",
-    faq4A: "Sie können sofort loslegen. Die App funktioniert mit integrierten Google Gemini Flash Modellen oder über Ihren eigenen OpenRouter API-Schlüssel in den Einstellungen.",
+    faq4A: "Nicht erforderlich: Jeder registrierte Benutzer hat 15 kostenlose Generierungen pro Tag; mit einem persönlichen OpenRouter-Schlüssel haben Sie keine Limits.",
     faq5Q: "Wie wird die Datenschutz für meine Bilder gehandhabt?",
     faq5A: "Ihre Grafiken und Logos werden in Echtzeit ausschließlich zur Generierung Ihrer Mockups verarbeitet und niemals gespeichert oder zum Training öffentlicher Modelle verwendet.",
     ctaFinalTitle: "Bereit, Ihren E-Commerce zu revolutionieren?",
@@ -727,6 +739,9 @@ export const translations: Record<string, Record<string, string>> = {
     updatePasswordBtn: "Passwort aktualisieren",
     passwordUpdatedSuccess: "Passwort erfolgreich aktualisiert!",
     passwordTooShort: "Das Passwort muss mindestens 6 Zeichen lang sein.",
-    passwordUpdateError: "Fehler beim Aktualisieren des Passworts. Bitte versuchen Sie es erneut."
+    passwordUpdateError: "Fehler beim Aktualisieren des Passworts. Bitte versuchen Sie es erneut.",
+    openrouterNotice: "Haben Sie einen OpenRouter-Schlüssel? Hier eingeben: unbegrenzte Generierungen (Sie bezahlen die Nutzung auf OpenRouter). Ohne Schlüssel haben Sie 15 kostenlose Generierungen pro Tag.",
+    unlimitedKeyBtn: "Unbegrenzte Generierungen: Verwenden Sie Ihren Schlüssel",
+    dailyLimitReached: "Tägliches Limit erreicht"
   }
 };

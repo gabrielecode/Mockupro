@@ -184,8 +184,8 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
               </div>
               <p className="text-[12px] text-stone-600 leading-snug">
                 {isItalian
-                  ? "Utilizziamo Google Gemini (e opzionalmente OpenRouter). I tuoi loghi e prompt sono elaborati in memoria unicamente per generare il render, senza training di modelli pubblici."
-                  : "We use Google Gemini (and optionally OpenRouter). Your logos and prompts are processed in-memory solely to generate the render, without training public models."}
+                  ? "Utilizziamo OpenRouter e il fornitore del modello AI. I tuoi loghi e prompt sono elaborati in memoria unicamente per generare il render, senza training di modelli pubblici."
+                  : "We use OpenRouter and the AI model provider. Your logos and prompts are processed in-memory solely to generate the render, without training public models."}
               </p>
             </div>
           </div>
