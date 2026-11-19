@@ -19,7 +19,8 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 // Server-side API proxy for Mockup Generation (supports OpenRouter & Gemini)
 app.post("/api/mockup/generate", async (req, res) => {
   const clientIp = req.ip || req.socket.remoteAddress || "unknown";
-  const result = await generateMockup(req.body, clientIp);
+  const authHeader = req.headers.authorization;
+  const result = await generateMockup(req.body, clientIp, authHeader);
   return res.status(result.status).json(result.body);
 });
 

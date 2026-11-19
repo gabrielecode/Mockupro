@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { createClient } from "@supabase/supabase-js";
 
 // Rate limiter in-memory per IP (10 requests/min per instance)
 const rateLimitMap = new Map<string, number[]>();
@@ -50,9 +51,71 @@ export interface ServiceResult {
 
 export async function generateMockup(
   payload: GenerateMockupBody,
-  clientIp: string = "unknown"
+  clientIp: string = "unknown",
+  authHeader?: string
 ): Promise<ServiceResult> {
   try {
+    // 1. Authorization check: token must be provided
+    if (!authHeader || typeof authHeader !== "string" || !authHeader.trim()) {
+      return {
+        status: 401,
+        body: { error: "Non autorizzato. Token mancante." },
+      };
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      return {
+        status: 401,
+        body: { error: "Non autorizzato. Token mancante." },
+      };
+    }
+
+    // 2. Supabase use_generation RPC verification
+    const SUPABASE_URL =
+      process.env.SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL ||
+      "https://placeholder-project.supabase.co";
+    const SUPABASE_ANON_KEY =
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      "placeholder-anon-key";
+
+    const Authorization = authHeader.startsWith("Bearer ")
+      ? authHeader
+      : `Bearer ${authHeader}`;
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: {
+          Authorization,
+        },
+      },
+    });
+
+    const { data: allowed, error: rpcError } = await supabase.rpc("use_generation");
+
+    if (rpcError) {
+      console.error("Supabase RPC use_generation error:", rpcError);
+      if (
+        rpcError.code === "PGRST301" ||
+        rpcError.message?.toLowerCase().includes("jwt") ||
+        rpcError.message?.toLowerCase().includes("unauthorized")
+      ) {
+        return {
+          status: 401,
+          body: { error: "Token non valido o sessione scaduta." },
+        };
+      }
+    }
+
+    if (allowed === false) {
+      return {
+        status: 429,
+        body: { error: "Limite giornaliero raggiunto" },
+      };
+    }
+
     if (!checkRateLimit(clientIp)) {
       return {
         status: 429,

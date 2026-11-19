@@ -35,7 +35,7 @@ async function readJsonBody(req: VercelRequest): Promise<GenerateMockupBody> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.statusCode = 204;
     res.end();
     return;
@@ -52,8 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const clientIp = Array.isArray(forwardedFor)
       ? forwardedFor[0]
       : forwardedFor?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+    const authHeader = Array.isArray(req.headers.authorization)
+      ? req.headers.authorization[0]
+      : req.headers.authorization;
 
-    const result = await generateMockup(body, clientIp);
+    const result = await generateMockup(body, clientIp, authHeader);
     res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error("Vercel /api/mockup/generate error:", error);

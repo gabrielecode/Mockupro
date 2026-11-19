@@ -414,6 +414,25 @@ export default function App() {
   const generateMockup = async (scenario: Scenario) => {
     if (!userImage || loadingStates[scenario.id]) return;
 
+    // Check / retrieve session access token
+    let accessToken = session?.access_token;
+    if (!accessToken) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      accessToken = sessionData.session?.access_token;
+      if (sessionData.session) {
+        setSession(sessionData.session);
+      }
+    }
+
+    if (!accessToken) {
+      setFeedbackMessage({
+        type: "error",
+        text: "Accesso richiesto: effettua il login per generare mockup."
+      });
+      setShowAuthModal(true);
+      return;
+    }
+
     setLoadingStates((prev) => ({ ...prev, [scenario.id]: true }));
     setFeedbackMessage(null);
 
@@ -457,7 +476,10 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
       const response = await fetch("/api/mockup/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
         body: JSON.stringify({
           promptText,
           base64Image: optimizedBase64,
@@ -470,7 +492,22 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
       let errorText = "La chiamata API ha fallito";
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === 401) {
+          try {
+            const errorData = await response.json();
+            errorText = errorData.error || "Non autorizzato (401). Effettua nuovamente l'accesso.";
+          } catch {
+            errorText = "Non autorizzato (401). Effettua nuovamente l'accesso.";
+          }
+          setShowAuthModal(true);
+        } else if (response.status === 429) {
+          try {
+            const errorData = await response.json();
+            errorText = errorData.error || "Limite giornaliero raggiunto";
+          } catch {
+            errorText = "Limite giornaliero raggiunto";
+          }
+        } else if (response.status === 404) {
           errorText = "Endpoint API non trovato (404). Verifica che le Serverless Functions in /api siano attive sul deploy.";
         } else if (response.status === 413) {
           errorText = "Immagine troppo pesante per il server (413). Prova con un file più leggero.";
