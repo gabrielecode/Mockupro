@@ -151,7 +151,9 @@ export const translations: Record<string, Record<string, string>> = {
     downloadJpg: "Scarica JPG",
     downloadPdf: "Scarica Scheda Tecnica (PDF)",
     close: "Chiudi",
-    downloadBtn: "Scarica"
+    downloadBtn: "Scarica",
+    seoTitle: "Mockup AI in 15s: foto professionali per Etsy e Shopify",
+    seoDescription: "Trasforma il tuo logo in mockup fotorealistici per Etsy e Shopify. Oltre 50 prodotti con finiture realistiche pronti in 15 secondi, senza grafici."
   },
   en: {
     brandTitle: "MockupStudio Pro",
@@ -305,7 +307,9 @@ export const translations: Record<string, Record<string, string>> = {
     downloadJpg: "Download JPG",
     downloadPdf: "Download Tech Sheet (PDF)",
     close: "Close",
-    downloadBtn: "Download"
+    downloadBtn: "Download",
+    seoTitle: "AI Mockups in 15s: Boost Etsy & Shopify Store Sales",
+    seoDescription: "Turn any logo into studio-grade mockups for Etsy and Shopify in 15 seconds. Over 50 products with realistic print finishes—no photoshoot needed."
   },
   es: {
     brandTitle: "MockupStudio Pro",
@@ -459,7 +463,9 @@ export const translations: Record<string, Record<string, string>> = {
     downloadJpg: "Descargar JPG",
     downloadPdf: "Descargar Ficha Técnica (PDF)",
     close: "Cerrar",
-    downloadBtn: "Descargar"
+    downloadBtn: "Descargar",
+    seoTitle: "Mockups con IA en 15s: vende más en Etsy y Shopify",
+    seoDescription: "Convierte tu logotipo en mockups fotorrealistas para Etsy y Shopify en 15 segundos. Más de 50 productos con acabados reales sin sesión de fotos."
   },
   fr: {
     brandTitle: "MockupStudio Pro",
@@ -613,7 +619,9 @@ export const translations: Record<string, Record<string, string>> = {
     downloadJpg: "Télécharger JPG",
     downloadPdf: "Télécharger Fiche Technique (PDF)",
     close: "Fermer",
-    downloadBtn: "Télécharger"
+    downloadBtn: "Télécharger",
+    seoTitle: "Mockups IA en 15s : boostez vos ventes Etsy et Shopify",
+    seoDescription: "Transformez votre logo en mockups réalistes pour Etsy et Shopify en 15 secondes. Plus de 50 produits aux finitions soignées, sans shooting photo."
   },
   de: {
     brandTitle: "MockupStudio Pro",
@@ -767,6 +775,8 @@ export const translations: Record<string, Record<string, string>> = {
     downloadJpg: "JPG herunterladen",
     downloadPdf: "Produktions-Datenblatt (PDF)",
     close: "Schließen",
-    downloadBtn: "Herunterladen"
+    downloadBtn: "Herunterladen",
+    seoTitle: "KI-Mockups in 15s: Mehr Umsatz auf Etsy & Shopify",
+    seoDescription: "Verwandeln Sie Ihr Logo in 15 Sekunden in realistische Mockups für Etsy und Shopify. Über 50 Produkte mit echten Druckeffekten – ohne Fotoshooting."
   }
 };
