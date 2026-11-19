@@ -182,9 +182,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <a
               href="#faq"
               onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-stone-900 transition-colors py-2"
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
             >
               {t.navFaq}
+            </a>
+            <a
+              href="/privacy"
+              onClick={(e) => {
+                setMobileMenuOpen(false);
+                if (onOpenPrivacy) {
+                  e.preventDefault();
+                  onOpenPrivacy();
+                }
+              }}
+              className="hover:text-stone-900 transition-colors py-2"
+            >
+              {t.privacyTitle || "Privacy Policy"}
             </a>
 
             {/* Mobile Auth actions */}

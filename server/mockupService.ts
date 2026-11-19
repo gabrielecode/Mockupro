@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
 // Rate limiter in-memory per IP (10 requests/min per instance)
@@ -21,18 +20,13 @@ export function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Whitelist of allowed image generation models
+// Whitelist of allowed image generation models (only models with "/")
 export const ALLOWED_MODELS = [
-  "gemini-3.1-flash-lite-image",
-  "gemini-2.5-flash-image",
-  "gemini-3-pro-image",
-  "gemini-3.1-flash-image",
   "google/gemini-2.5-flash-image",
   "google/gemini-3.1-flash-lite-image",
   "google/gemini-3.1-flash-image",
 ] as const;
 
-export const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite-image";
 export const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.5-flash-image";
 
 export interface GenerateMockupBody {
@@ -71,7 +65,21 @@ export async function generateMockup(
       };
     }
 
-    // 2. Supabase use_generation RPC verification
+    // Check OpenRouter API key configuration
+    const userApiKey =
+      typeof payload?.apiKey === "string" ? payload.apiKey.trim() : "";
+    const serverOpenRouterKey = (process.env.OPENROUTER_API_KEY || "").trim();
+    const hasUserApiKey = userApiKey.length > 0;
+
+    // Se manca OPENROUTER_API_KEY e manca apiKey rispondi 503
+    if (!hasUserApiKey && !serverOpenRouterKey) {
+      return {
+        status: 503,
+        body: { error: "OPENROUTER_API_KEY non configurata sul server." },
+      };
+    }
+
+    // 2. Supabase client setup
     const SUPABASE_URL =
       process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SUPABASE_ANON_KEY =
@@ -96,41 +104,54 @@ export async function generateMockup(
       },
     });
 
-    const { data: allowed, error: rpcError } = await supabase.rpc("use_generation");
-
-    if (rpcError) {
-      console.error("Supabase RPC use_generation error:", rpcError);
-      const errMsg = (rpcError.message || "").toLowerCase();
-      const errDetails = ((rpcError as any).details || "").toLowerCase();
-      const isAuthError =
-        rpcError.code === "PGRST301" ||
-        (rpcError as any).status === 401 ||
-        errMsg.includes("jwt") ||
-        errMsg.includes("unauthorized") ||
-        errMsg.includes("auth") ||
-        errDetails.includes("jwt") ||
-        errDetails.includes("unauthorized");
-
-      if (isAuthError) {
+    // Se il body ha apiKey non vuota: salta rpc("use_generation") e verifica solo il token con createClient(...,{global:{headers:{Authorization}}}).auth.getUser(); se non valido 401.
+    // Senza apiKey: usa OPENROUTER_API_KEY del server, con rpc use_generation come ora.
+    if (hasUserApiKey) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
         return {
           status: 401,
           body: { error: "Token non valido o sessione scaduta." },
         };
       }
+    } else {
+      const { data: allowed, error: rpcError } = await supabase.rpc("use_generation");
 
-      return {
-        status: 503,
-        body: { error: "Servizio temporaneamente non disponibile" },
-      };
+      if (rpcError) {
+        console.error("Supabase RPC use_generation error:", rpcError);
+        const errMsg = (rpcError.message || "").toLowerCase();
+        const errDetails = ((rpcError as any).details || "").toLowerCase();
+        const isAuthError =
+          rpcError.code === "PGRST301" ||
+          (rpcError as any).status === 401 ||
+          errMsg.includes("jwt") ||
+          errMsg.includes("unauthorized") ||
+          errMsg.includes("auth") ||
+          errDetails.includes("jwt") ||
+          errDetails.includes("unauthorized");
+
+        if (isAuthError) {
+          return {
+            status: 401,
+            body: { error: "Token non valido o sessione scaduta." },
+          };
+        }
+
+        return {
+          status: 503,
+          body: { error: "Servizio temporaneamente non disponibile" },
+        };
+      }
+
+      if (allowed === false) {
+        return {
+          status: 429,
+          body: { error: "Limite giornaliero raggiunto" },
+        };
+      }
     }
 
-    if (allowed === false) {
-      return {
-        status: 429,
-        body: { error: "Limite giornaliero raggiunto" },
-      };
-    }
-
+    // Rate limiter
     if (!checkRateLimit(clientIp)) {
       return {
         status: 429,
@@ -142,21 +163,8 @@ export async function generateMockup(
       promptText,
       base64Image,
       mimeType = "image/jpeg",
-      provider = "gemini",
-      apiKey,
       model,
     } = payload || {};
-
-    const rawModel = typeof model === "string" ? model.trim() : "";
-    const isModelAllowed = (ALLOWED_MODELS as readonly string[]).includes(rawModel);
-
-    const validProviders = ["gemini", "openrouter"];
-    if (!validProviders.includes(provider)) {
-      return {
-        status: 400,
-        body: { error: "Invalid provider. Allowed: gemini, openrouter." },
-      };
-    }
 
     const validMimeTypes = ["image/png", "image/jpeg", "image/webp"];
     if (!validMimeTypes.includes(mimeType)) {
@@ -204,181 +212,116 @@ export async function generateMockup(
       };
     }
 
-    const activeApiKey = (apiKey && apiKey.trim()) || process.env.GEMINI_API_KEY;
+    // Forza provider "openrouter"
+    const activeOpenRouterKey = hasUserApiKey ? userApiKey : serverOpenRouterKey;
+
+    // Whitelist solo modelli con "/" e default google/gemini-2.5-flash-image
+    const rawModel = typeof model === "string" ? model.trim() : "";
+    const isModelAllowed =
+      rawModel.includes("/") &&
+      (ALLOWED_MODELS as readonly string[]).includes(rawModel);
+
+    const selectedModel = isModelAllowed ? rawModel : DEFAULT_OPENROUTER_MODEL;
+
+    const referer =
+      process.env.APP_URL ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "https://aistudio.google.com");
+
+    const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${activeOpenRouterKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": referer,
+        "X-Title": "MockupStudio Pro",
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        modalities: ["image", "text"],
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: promptText },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Image}` },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!orResponse.ok) {
+      const errJson = (await orResponse.json().catch(() => ({}))) as any;
+      return {
+        status: orResponse.status >= 400 ? orResponse.status : 502,
+        body: {
+          error:
+            errJson?.error?.message ||
+            `OpenRouter API error (${orResponse.status}): ${orResponse.statusText}`,
+        },
+      };
+    }
+
+    const orData = (await orResponse.json()) as any;
+    const message = orData.choices?.[0]?.message || {};
 
     let generatedBase64: string | null = null;
     let textResponse = "";
 
-    if (provider === "openrouter") {
-      const activeOpenRouterKey =
-        (apiKey && apiKey.trim()) || process.env.OPENROUTER_API_KEY;
-      if (!activeOpenRouterKey) {
-        return {
-          status: 400,
-          body: {
-            error:
-              "OpenRouter API Key is missing. Set OPENROUTER_API_KEY on Vercel or enter your key in Settings.",
-          },
-        };
-      }
+    let rawImageCandidate: string | null =
+      message.images?.[0]?.image_url?.url ||
+      message.images?.[0]?.url ||
+      null;
 
-      const selectedModel =
-        isModelAllowed && rawModel.includes("/")
-          ? rawModel
-          : DEFAULT_OPENROUTER_MODEL;
-      const referer =
-        process.env.APP_URL ||
-        (process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : "https://aistudio.google.com");
-
-      const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${activeOpenRouterKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": referer,
-          "X-Title": "MockupStudio Pro",
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          modalities: ["image", "text"],
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: promptText },
-                {
-                  type: "image_url",
-                  image_url: { url: `data:${mimeType};base64,${base64Image}` },
-                },
-              ],
-            },
-          ],
-        }),
-      });
-
-      if (!orResponse.ok) {
-        const errJson = (await orResponse.json().catch(() => ({}))) as any;
-        return {
-          status: orResponse.status >= 400 ? orResponse.status : 502,
-          body: {
-            error:
-              errJson?.error?.message ||
-              `OpenRouter API error (${orResponse.status}): ${orResponse.statusText}`,
-          },
-        };
-      }
-
-      const orData = (await orResponse.json()) as any;
-      const message = orData.choices?.[0]?.message || {};
-
-      let rawImageCandidate: string | null =
-        message.images?.[0]?.image_url?.url ||
-        message.images?.[0]?.url ||
-        null;
-
-      if (typeof message.content === "string") {
-        textResponse = message.content;
-        if (!rawImageCandidate) {
-          const mdDataUri = message.content.match(
-            /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/
-          );
-          if (mdDataUri) rawImageCandidate = mdDataUri[0];
-        }
-      } else if (Array.isArray(message.content)) {
-        const textParts: string[] = [];
-        for (const part of message.content) {
-          if (part?.type === "text" && typeof part.text === "string") {
-            textParts.push(part.text);
-          } else if (!rawImageCandidate) {
-            const candidateUrl =
-              part?.image_url?.url || part?.url || part?.image?.url;
-            if (typeof candidateUrl === "string") {
-              rawImageCandidate = candidateUrl;
-            } else if (typeof part?.inlineData?.data === "string") {
-              generatedBase64 = part.inlineData.data;
-            }
-          }
-        }
-        textResponse = textParts.join("\n");
-      } else if (message.content) {
-        textResponse = JSON.stringify(message.content);
-      }
-
-      if (!generatedBase64 && rawImageCandidate) {
-        const dataUriMatch = rawImageCandidate.match(
-          /^data:image\/[a-zA-Z0-9+.-]+;base64,(.+)$/
+    if (typeof message.content === "string") {
+      textResponse = message.content;
+      if (!rawImageCandidate) {
+        const mdDataUri = message.content.match(
+          /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/
         );
-        if (dataUriMatch) {
-          generatedBase64 = dataUriMatch[1];
-        } else if (rawImageCandidate.includes("base64,")) {
-          generatedBase64 = rawImageCandidate.split("base64,")[1];
-        } else if (/^https?:\/\//i.test(rawImageCandidate)) {
-          const imgRes = await fetch(rawImageCandidate);
-          if (imgRes.ok) {
-            const arrBuf = await imgRes.arrayBuffer();
-            generatedBase64 = Buffer.from(arrBuf).toString("base64");
-          }
-        } else {
-          generatedBase64 = rawImageCandidate;
-        }
+        if (mdDataUri) rawImageCandidate = mdDataUri[0];
       }
-    } else {
-      if (!activeApiKey) {
-        return {
-          status: 400,
-          body: {
-            error:
-              "GEMINI_API_KEY is not configured on the server and no user Gemini API key was provided in Settings.",
-          },
-        };
-      }
-
-      const customAi = new GoogleGenAI({
-        apiKey: activeApiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      });
-
-      const geminiModel =
-        isModelAllowed && !rawModel.includes("/")
-          ? rawModel
-          : DEFAULT_GEMINI_MODEL;
-
-      const response = await customAi.models.generateContent({
-        model: geminiModel,
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Image,
-                mimeType,
-              },
-            },
-            {
-              text: promptText,
-            },
-          ],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-          },
-        },
-      });
-
-      if (response?.candidates?.[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData?.data) {
+    } else if (Array.isArray(message.content)) {
+      const textParts: string[] = [];
+      for (const part of message.content) {
+        if (part?.type === "text" && typeof part.text === "string") {
+          textParts.push(part.text);
+        } else if (!rawImageCandidate) {
+          const candidateUrl =
+            part?.image_url?.url || part?.url || part?.image?.url;
+          if (typeof candidateUrl === "string") {
+            rawImageCandidate = candidateUrl;
+          } else if (typeof part?.inlineData?.data === "string") {
             generatedBase64 = part.inlineData.data;
-          } else if (part.text) {
-            textResponse += part.text;
           }
         }
+      }
+      textResponse = textParts.join("\n");
+    } else if (message.content) {
+      textResponse = JSON.stringify(message.content);
+    }
+
+    if (!generatedBase64 && rawImageCandidate) {
+      const dataUriMatch = rawImageCandidate.match(
+        /^data:image\/[a-zA-Z0-9+.-]+;base64,(.+)$/
+      );
+      if (dataUriMatch) {
+        generatedBase64 = dataUriMatch[1];
+      } else if (rawImageCandidate.includes("base64,")) {
+        generatedBase64 = rawImageCandidate.split("base64,")[1];
+      } else if (/^https?:\/\//i.test(rawImageCandidate)) {
+        const imgRes = await fetch(rawImageCandidate);
+        if (imgRes.ok) {
+          const arrBuf = await imgRes.arrayBuffer();
+          generatedBase64 = Buffer.from(arrBuf).toString("base64");
+        }
+      } else {
+        generatedBase64 = rawImageCandidate;
       }
     }
 

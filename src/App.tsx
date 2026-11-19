@@ -135,22 +135,32 @@ export default function App() {
     };
   }, [viewMode]);
 
+  const navigateTo = (mode: "landing" | "studio" | "privacy") => {
+    if (typeof window !== "undefined") {
+      const targetPath = mode === "privacy" ? "/privacy" : "/";
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ mode }, "", targetPath);
+      }
+    }
+    setViewMode(mode);
+  };
+
   // Handle browser back/forward navigation for /privacy
   useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname === "/privacy") {
         setViewMode("privacy");
-      } else if (viewMode === "privacy") {
-        setViewMode("landing");
+      } else {
+        setViewMode((prev) => (prev === "privacy" ? (session ? "studio" : "landing") : prev));
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [viewMode]);
+  }, [session]);
 
   const handleEnterStudio = () => {
     if (session) {
-      setViewMode("studio");
+      navigateTo("studio");
     } else {
       setAuthModalTab("signin");
       setShowAuthModal(true);
@@ -164,7 +174,7 @@ export default function App() {
       console.error("Sign out error:", err);
     }
     setSession(null);
-    setViewMode("landing");
+    navigateTo("landing");
     setFeedbackMessage({ type: "info", text: "Disconnessione effettuata con successo." });
   };
 
@@ -850,7 +860,19 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
   if (viewMode === "privacy") {
     return (
       <>
-        <PrivacyPolicy lang={lang} onBack={() => setViewMode("landing")} />
+        <PrivacyPolicy
+          lang={lang}
+          onBack={() => navigateTo(session ? "studio" : "landing")}
+          onEnterStudio={() => {
+            if (session) {
+              navigateTo("studio");
+            } else {
+              setAuthModalTab("signin");
+              setShowAuthModal(true);
+            }
+          }}
+          isLoggedIn={!!session}
+        />
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
@@ -858,11 +880,11 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           initialTab={authModalTab}
           onSuccess={() => {
             setShowAuthModal(false);
-            setViewMode("studio");
+            navigateTo("studio");
           }}
           onOpenPrivacy={() => {
             setShowAuthModal(false);
-            setViewMode("privacy");
+            navigateTo("privacy");
           }}
         />
         {renderPasswordRecoveryModal()}
@@ -885,7 +907,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setAuthModalTab("signin");
             setShowAuthModal(true);
           }}
-          onOpenPrivacy={() => setViewMode("privacy")}
+          onOpenPrivacy={() => navigateTo("privacy")}
         />
         <AuthModal
           isOpen={showAuthModal}
@@ -894,11 +916,11 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           initialTab={authModalTab}
           onSuccess={() => {
             setShowAuthModal(false);
-            setViewMode("studio");
+            navigateTo("studio");
           }}
           onOpenPrivacy={() => {
             setShowAuthModal(false);
-            setViewMode("privacy");
+            navigateTo("privacy");
           }}
         />
         {renderPasswordRecoveryModal()}
@@ -915,7 +937,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         <header className="mb-6 bg-white p-5 md:p-6 rounded-2xl border border-stone-200 flex flex-col xl:flex-row xl:items-center justify-between gap-6 shadow-xs relative">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setViewMode("landing")}
+              onClick={() => navigateTo("landing")}
               className="p-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer"
             >
               <ArrowLeft size={16} /> {t.navHome}
@@ -1542,6 +1564,26 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                     />
                   </div>
                 )}
+                <div className="mt-4 p-3 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-600 space-y-1">
+                  <p className="font-semibold text-stone-800 flex items-center gap-1.5">
+                    <Info size={13} className="text-[#F1641E]" />
+                    <span>Informativa Privacy & AI Provider</span>
+                  </p>
+                  <p className="leading-relaxed">
+                    Le immagini e i prompt vengono elaborati in tempo reale tramite le API di Google Gemini o OpenRouter conformemente al GDPR. Nessun dato viene ceduto a terzi. Leggi la{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSettings(false);
+                        navigateTo("privacy");
+                      }}
+                      className="text-[#F1641E] underline font-bold cursor-pointer hover:text-[#D44E13]"
+                    >
+                      Informativa sulla Privacy completa
+                    </button>
+                    .
+                  </p>
+                </div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-stone-200">
@@ -1556,6 +1598,19 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           </div>
         )}
 
+        {/* Studio Footer */}
+        <footer className="mt-12 py-6 border-t border-stone-200 flex flex-wrap items-center justify-between gap-4 text-xs text-stone-500">
+          <p>© {new Date().getFullYear()} {t.brandTitle}. {t.footerText}</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigateTo("privacy")}
+              className="text-stone-600 hover:text-stone-900 font-semibold underline transition-colors cursor-pointer"
+            >
+              {t.privacyTitle || "Informativa sulla Privacy"}
+            </button>
+          </div>
+        </footer>
+
         {/* Auth Modal */}
         <AuthModal
           isOpen={showAuthModal}
@@ -1567,7 +1622,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           }}
           onOpenPrivacy={() => {
             setShowAuthModal(false);
-            setViewMode("privacy");
+            navigateTo("privacy");
           }}
         />
 
