@@ -611,41 +611,36 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
       let errorText = "La chiamata API ha fallito";
       if (!response.ok) {
-        if (response.status === 401) {
+        const rawBody = await response.text().catch(() => "");
+        let parsedError: any = null;
+        if (rawBody) {
           try {
-            const errorData = await response.json();
-            errorText = errorData.error || "Non autorizzato (401). Effettua nuovamente l'accesso.";
-          } catch {
-            errorText = "Non autorizzato (401). Effettua nuovamente l'accesso.";
-          }
+            parsedError = JSON.parse(rawBody);
+          } catch {}
+        }
+
+        if (response.status === 401) {
+          errorText =
+            parsedError?.error ||
+            "Non autorizzato (401). Effettua nuovamente l'accesso.";
           setShowAuthModal(true);
         } else if (response.status === 429) {
-          try {
-            const errorData = await response.json();
-            errorText = errorData.error || t.dailyLimitReached;
-          } catch {
-            errorText = t.dailyLimitReached;
-          }
+          errorText = parsedError?.error || t.dailyLimitReached;
         } else if (response.status === 404) {
-          errorText = "Endpoint API non trovato (404). Verifica che le Serverless Functions in /api siano attive sul deploy.";
+          errorText =
+            "Endpoint API non trovato (404). Verifica che le Serverless Functions in /api siano attive sul deploy.";
         } else if (response.status === 413) {
-          errorText = "Immagine troppo pesante per il server (413). Prova con un file più leggero.";
+          errorText =
+            "Immagine troppo pesante per il server (413). Prova con un file più leggero.";
         } else if (response.status === 504) {
-          errorText = "Timeout del server (504). Il modello AI sta impiegando troppo tempo: riprova.";
+          errorText =
+            "Timeout del server (504). Il modello AI sta impiegando troppo tempo: riprova.";
+        } else if (parsedError?.error) {
+          errorText = parsedError.error;
+        } else if (rawBody && !rawBody.trim().startsWith("<")) {
+          errorText = `Errore HTTP ${response.status}: ${rawBody.trim().slice(0, 160)}`;
         } else {
-          try {
-            const errorData = await response.json();
-            errorText = errorData.error || errorText;
-          } catch {
-            try {
-              const rawText = await response.text();
-              if (rawText && !rawText.trim().startsWith("<")) {
-                errorText = rawText;
-              } else {
-                errorText = `Errore HTTP ${response.status} dal server API.`;
-              }
-            } catch {}
-          }
+          errorText = `Errore HTTP ${response.status} dal server API.`;
         }
         throw new Error(errorText);
       }
