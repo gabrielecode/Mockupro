@@ -88,10 +88,46 @@ interface FeedbackMessage {
   text: string;
 }
 
+const SUPPORTED_LANGS = ["it", "en", "es", "fr", "de"] as const;
+type SupportedLang = (typeof SUPPORTED_LANGS)[number];
+
+const isSupportedLang = (val: string): val is SupportedLang =>
+  (SUPPORTED_LANGS as readonly string[]).includes(val);
+
+const parseUrlState = (pathname: string): { lang: SupportedLang; isPrivacy: boolean } => {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length > 0 && isSupportedLang(segments[0])) {
+    return {
+      lang: segments[0],
+      isPrivacy: segments[1] === "privacy",
+    };
+  }
+  return {
+    lang: "it",
+    isPrivacy: segments[0] === "privacy",
+  };
+};
+
+const buildPathForState = (targetLang: string, mode: "landing" | "studio" | "privacy"): string => {
+  const normalizedLang: SupportedLang = isSupportedLang(targetLang) ? targetLang : "it";
+  const prefix = normalizedLang === "it" ? "" : `/${normalizedLang}`;
+  if (mode === "privacy") {
+    return `${prefix}/privacy`;
+  }
+  return prefix || "/";
+};
+
+const LANG_SUGGESTION_COPY: Record<Exclude<SupportedLang, "it">, { label: string; cta: string }> = {
+  en: { label: "Would you like to switch to English?", cta: "Switch to EN" },
+  es: { label: "¿Prefieres ver la página en español?", cta: "Cambiar a ES" },
+  fr: { label: "Souhaitez-vous passer en français ?", cta: "Passer en FR" },
+  de: { label: "Möchten Sie zur deutschen Version wechseln?", cta: "Auf DE wechseln" },
+};
+
 export default function App() {
   const [viewMode, setViewMode] = useState<"landing" | "studio" | "privacy">(() => {
-    if (typeof window !== "undefined" && window.location.pathname === "/privacy") {
-      return "privacy";
+    if (typeof window !== "undefined") {
+      return parseUrlState(window.location.pathname).isPrivacy ? "privacy" : "landing";
     }
     return "landing";
   });
@@ -99,12 +135,23 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
 
-  const [lang, setLang] = useState<string>(() => {
-    try {
-      return localStorage.getItem("mockup_lang") || "it";
-    } catch {
-      return "it";
+  const [lang, setLangState] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return parseUrlState(window.location.pathname).lang;
     }
+    return "it";
+  });
+  const [suggestedLang, setSuggestedLang] = useState<Exclude<SupportedLang, "it"> | null>(() => {
+    if (typeof window === "undefined" || window.location.pathname !== "/") {
+      return null;
+    }
+    try {
+      const saved = localStorage.getItem("mockup_lang");
+      if (saved && isSupportedLang(saved) && saved !== "it") {
+        return saved;
+      }
+    } catch {}
+    return null;
   });
   const t = translations[lang] || translations.it;
 
@@ -113,6 +160,12 @@ export default function App() {
   const [recoveryLoading, setRecoveryLoading] = useState<boolean>(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [recoverySuccessNotification, setRecoverySuccessNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang;
+    }
+  }, [lang]);
 
   // Supabase Auth listener
   useEffect(() => {
@@ -137,23 +190,50 @@ export default function App() {
     };
   }, [viewMode]);
 
+  const handleLanguageChange = (newLang: string) => {
+    const nextLang: SupportedLang = isSupportedLang(newLang) ? newLang : "it";
+    const targetPath = buildPathForState(nextLang, viewMode);
+    if (typeof window !== "undefined" && window.location.pathname !== targetPath) {
+      window.history.pushState({ mode: viewMode, lang: nextLang }, "", targetPath);
+    }
+    setLangState(nextLang);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = nextLang;
+    }
+    setSuggestedLang(null);
+  };
+
   const navigateTo = (mode: "landing" | "studio" | "privacy") => {
     if (typeof window !== "undefined") {
-      const targetPath = mode === "privacy" ? "/privacy" : "/";
+      const targetPath = buildPathForState(lang, mode);
       if (window.location.pathname !== targetPath) {
-        window.history.pushState({ mode }, "", targetPath);
+        window.history.pushState({ mode, lang }, "", targetPath);
       }
     }
     setViewMode(mode);
   };
 
-  // Handle browser back/forward navigation for /privacy
+  // Handle browser back/forward navigation for language prefixes and /privacy
   useEffect(() => {
-    const handlePopState = () => {
-      if (window.location.pathname === "/privacy") {
+    const handlePopState = (event: PopStateEvent) => {
+      const { lang: urlLang, isPrivacy } = parseUrlState(window.location.pathname);
+      setLangState(urlLang);
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = urlLang;
+      }
+      setSuggestedLang(null);
+
+      if (isPrivacy) {
         setViewMode("privacy");
       } else {
-        setViewMode((prev) => (prev === "privacy" ? (session ? "studio" : "landing") : prev));
+        const stateMode = event.state?.mode as "landing" | "studio" | "privacy" | undefined;
+        if (stateMode === "studio" && session) {
+          setViewMode("studio");
+        } else if (stateMode === "landing") {
+          setViewMode("landing");
+        } else {
+          setViewMode((prev) => (prev === "privacy" ? (session ? "studio" : "landing") : prev));
+        }
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -226,12 +306,6 @@ export default function App() {
       return "google/gemini-2.5-flash-image";
     }
   });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("mockup_lang", lang);
-    } catch {}
-  }, [lang]);
 
   useEffect(() => {
     try {
@@ -946,6 +1020,30 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     );
   };
 
+  const renderLangSuggestionToast = () => {
+    if (!suggestedLang || lang !== "it") return null;
+    const copy = LANG_SUGGESTION_COPY[suggestedLang];
+    return (
+      <div className="fixed bottom-5 right-5 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-3 text-xs animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <Globe size={15} className="text-[#F1641E] shrink-0" />
+        <span className="font-medium">{copy.label}</span>
+        <button
+          onClick={() => handleLanguageChange(suggestedLang)}
+          className="px-2.5 py-1 bg-[#F1641E] hover:bg-[#D44E13] text-white font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+        >
+          {copy.cta}
+        </button>
+        <button
+          onClick={() => setSuggestedLang(null)}
+          aria-label={t.close || "Chiudi"}
+          className="text-stone-400 hover:text-white transition-colors cursor-pointer"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    );
+  };
+
   if (viewMode === "privacy") {
     return (
       <>
@@ -978,6 +1076,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         />
         {renderPasswordRecoveryModal()}
         {renderRecoverySuccessToast()}
+        {renderLangSuggestionToast()}
       </>
     );
   }
@@ -987,7 +1086,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
       <>
         <LandingPage
           lang={lang}
-          setLang={setLang}
+          setLang={handleLanguageChange}
           onEnterStudio={handleEnterStudio}
           onOpenSettings={() => setShowSettings(true)}
           session={session}
@@ -1014,6 +1113,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         />
         {renderPasswordRecoveryModal()}
         {renderRecoverySuccessToast()}
+        {renderLangSuggestionToast()}
       </>
     );
   }
@@ -1052,7 +1152,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
               <Globe size={13} className="text-stone-500 mr-1.5 shrink-0" />
               <select
                 value={lang}
-                onChange={(e) => setLang(e.target.value)}
+                onChange={(e) => handleLanguageChange(e.target.value)}
                 aria-label="Seleziona lingua"
                 className="bg-transparent text-stone-900 font-bold focus:outline-none cursor-pointer uppercase pr-2"
               >
@@ -1716,6 +1816,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
         {renderPasswordRecoveryModal()}
         {renderRecoverySuccessToast()}
+        {renderLangSuggestionToast()}
 
       </div>
     </div>

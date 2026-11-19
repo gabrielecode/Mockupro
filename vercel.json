@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx vite build",
+  "buildCommand": "npx vite build && node scripts/seo.mjs",
   "outputDirectory": "dist",
   "functions": {
     "api/**/*.ts": {
@@ -8,6 +8,38 @@
     }
   },
   "rewrites": [
+    {
+      "source": "/en",
+      "destination": "/en/index.html"
+    },
+    {
+      "source": "/en/privacy",
+      "destination": "/en/index.html"
+    },
+    {
+      "source": "/es",
+      "destination": "/es/index.html"
+    },
+    {
+      "source": "/es/privacy",
+      "destination": "/es/index.html"
+    },
+    {
+      "source": "/fr",
+      "destination": "/fr/index.html"
+    },
+    {
+      "source": "/fr/privacy",
+      "destination": "/fr/index.html"
+    },
+    {
+      "source": "/de",
+      "destination": "/de/index.html"
+    },
+    {
+      "source": "/de/privacy",
+      "destination": "/de/index.html"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
