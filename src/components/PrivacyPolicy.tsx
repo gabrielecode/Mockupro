@@ -143,7 +143,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
             </p>
 
             <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-stone-100 text-[11px] font-medium text-stone-500">
-              <span>📅 {isItalian ? "Ultimo aggiornamento: Febbraio 2026" : "Last updated: February 2026"}</span>
+              <span>📅 Ultimo aggiornamento: Novembre 2026</span>
               <span>•</span>
               <span>📄 {isItalian ? "Versione: 2.1 (Conforme AI Act & GDPR)" : "Version: 2.1 (GDPR & AI Act compliant)"}</span>
               <span>•</span>
@@ -279,7 +279,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                     <li>Identificare in modo univoco l'utente e consentire l'accesso allo Studio di generazione mockup;</li>
                     <li>Inviare comunicazioni tecniche e transazionali di servizio (es. conferma registrazione, link di recupero password);</li>
                     <li>Gestire le quote di generazione giornaliere associate al singolo account;</li>
-                    <li>Prevenire abusi, bot e violazioni dei Termini di Servizio.</li>
+                    <li>Prevenire abusi, bot e violazioni delle regole della piattaforma.</li>
                   </ul>
                   <p className="text-[11px] text-stone-500 mt-2">
                     <strong>Base giuridica:</strong> Art. 6, par. 1, lett. b) GDPR (esecuzione di un contratto o di misure precontrattuali richieste dall'interessato). Il mancato conferimento dell'indirizzo email rende impossibile la creazione dell'account e l'accesso al generatore.
@@ -332,10 +332,10 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
               <div className="space-y-3 mb-4">
                 <div className="border border-stone-200 rounded-xl p-4">
                   <h4 className="font-bold text-xs text-stone-900 mb-1">
-                    a) Consenso ai Termini e alla Privacy Policy (Contrattuale)
+                    a) Consenso alla Privacy Policy (Contrattuale)
                   </h4>
                   <p className="text-xs text-stone-600 leading-relaxed">
-                    La presa visione e l'accettazione dell'Informativa sulla Privacy e dei Termini di Servizio costituiscono la base contrattuale indispensabile per poter usufruire del generatore, delle funzioni di salvataggio ZIP e dei servizi cloud.
+                    La presa visione e l'accettazione dell'Informativa sulla Privacy costituiscono la base contrattuale indispensabile per poter usufruire del generatore, delle funzioni di salvataggio ZIP e dei servizi cloud.
                   </p>
                 </div>
 
@@ -386,45 +386,33 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
 
               <div className="space-y-4 mb-4">
                 
-                {/* Google Gemini Card */}
+                {/* AI Model Provider Card */}
                 <div className="border border-orange-200 bg-[#FFFBF8] rounded-2xl p-5 shadow-xs">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-xl bg-[#FFF2EB] border border-orange-300 flex items-center justify-center text-[#F1641E] font-extrabold text-xs">
-                        G
+                        AI
                       </div>
                       <div>
                         <h3 className="font-bold text-sm text-stone-900">
-                          Google Gemini (Provider Principale)
+                          {isItalian ? "Fornitore del modello AI (Google, tramite OpenRouter)" : "AI Model Provider (Google, via OpenRouter)"}
                         </h3>
                         <p className="text-[11px] text-stone-500">
-                          Fornitore: Google Ireland Limited (per utenti SEE/Svizzera) / Google LLC (USA)
+                          {isItalian ? "Elaborazione tramite OpenRouter e Google" : "Processing via OpenRouter and Google"}
                         </p>
                       </div>
                     </div>
                     <span className="text-[10px] uppercase font-bold text-[#F1641E] bg-white border border-orange-200 px-2 py-0.5 rounded-full">
-                      Default Engine
+                      AI Engine
                     </span>
                   </div>
 
                   <div className="text-xs text-stone-700 space-y-2 mt-3 leading-relaxed">
                     <p>
-                      <strong>Modelli impiegati:</strong> Modelli multimodali visivi ad alta risoluzione della famiglia Google GenAI (inclusi <code>gemini-2.5-flash-image</code>, <code>gemini-3.1-flash-lite-image</code>, <code>gemini-3-pro-image</code>, <code>gemini-3.1-flash-image</code>).
+                      {isItalian
+                        ? "Le immagini e i prompt vengono inviati a OpenRouter e al fornitore del modello solo per generare il mockup, e si applicano le loro politiche."
+                        : "Images and prompts are sent to OpenRouter and the model provider solely to generate the mockup, and their policies apply."}
                     </p>
-                    <p>
-                      <strong>Dati trasmessi alle API Google:</strong> Quando clicchi su <em>"Genera Mockup"</em>, il server trasmette alle API di Google Gemini:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-0.5 text-stone-600">
-                      <li>La porzione grafica elaborata nel canvas (logo o immagine caricata, codificata in base64 tramite canale sicuro SSL/TLS);</li>
-                      <li>Le istruzioni testuali (prompt) indicanti il tipo di prodotto, il colore scelto, l'ambientazione e la finitura di stampa selezionata (es. ricamo, lamina oro, DTG).</li>
-                    </ul>
-                    <p>
-                      <strong>Garanzie di riservatezza e No-Training:</strong> In conformità con i Termini di Servizio delle Google Cloud / Google AI API e con il Data Processing Addendum (DPA) sottoscritto con Google:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-0.5 text-stone-600">
-                      <li><strong>Nessun addestramento:</strong> I contenuti dei clienti (loghi, immagini caricate, prompt) <u>non vengono utilizzati da Google</u> per addestrare o migliorare modelli pubblici generali o per altre finalità commerciali autonome;</li>
-                      <li><strong>Elaborazione transiente:</strong> L'elaborazione avviene in tempo reale unicamente per produrre e restituire il render finale a 500x500 o 1K pixels.</li>
-                    </ul>
                   </div>
                 </div>
 
@@ -513,7 +501,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                       </td>
                       <td className="p-3">Database cloud, autenticazione, gestione quote RPC e sessioni utente</td>
                       <td className="p-3">Email, password hash, timestamp consenso, ID univoco utente</td>
-                      <td className="p-3">USA / UE • SOC2 Tipo II, ISO 27001, SCC UE-USA</td>
+                      <td className="p-3">USA / UE • SCC UE-USA</td>
                     </tr>
                     <tr className="hover:bg-stone-50">
                       <td className="p-3 font-semibold text-stone-900">

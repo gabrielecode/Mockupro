@@ -104,6 +104,59 @@ export async function generateMockup(
       },
     });
 
+    const {
+      promptText,
+      base64Image,
+      mimeType = "image/jpeg",
+      model,
+    } = payload || {};
+
+    const validMimeTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!validMimeTypes.includes(mimeType)) {
+      return {
+        status: 400,
+        body: {
+          error:
+            "Invalid mimeType. Only image/png, image/jpeg, and image/webp are allowed.",
+        },
+      };
+    }
+
+    if (!base64Image || typeof base64Image !== "string") {
+      return {
+        status: 400,
+        body: { error: "Missing base64Image data." },
+      };
+    }
+
+    try {
+      const buffer = Buffer.from(base64Image, "base64");
+      if (buffer.length === 0) {
+        return {
+          status: 400,
+          body: { error: "Empty base64Image data." },
+        };
+      }
+      if (buffer.length > 8 * 1024 * 1024) {
+        return {
+          status: 400,
+          body: { error: "Image size exceeds 8MB limit." },
+        };
+      }
+    } catch {
+      return {
+        status: 400,
+        body: { error: "Invalid base64 encoding." },
+      };
+    }
+
+    if (!promptText || typeof promptText !== "string") {
+      return {
+        status: 400,
+        body: { error: "Missing promptText instruction." },
+      };
+    }
+
     // Se il body ha apiKey non vuota: salta rpc("use_generation") e verifica solo il token con createClient(...,{global:{headers:{Authorization}}}).auth.getUser(); se non valido 401.
     // Senza apiKey: usa OPENROUTER_API_KEY del server, con rpc use_generation come ora.
     if (hasUserApiKey) {
@@ -156,59 +209,6 @@ export async function generateMockup(
       return {
         status: 429,
         body: { error: "Rate limit exceeded. Maximum 10 requests per minute." },
-      };
-    }
-
-    const {
-      promptText,
-      base64Image,
-      mimeType = "image/jpeg",
-      model,
-    } = payload || {};
-
-    const validMimeTypes = ["image/png", "image/jpeg", "image/webp"];
-    if (!validMimeTypes.includes(mimeType)) {
-      return {
-        status: 400,
-        body: {
-          error:
-            "Invalid mimeType. Only image/png, image/jpeg, and image/webp are allowed.",
-        },
-      };
-    }
-
-    if (!base64Image || typeof base64Image !== "string") {
-      return {
-        status: 400,
-        body: { error: "Missing base64Image data." },
-      };
-    }
-
-    try {
-      const buffer = Buffer.from(base64Image, "base64");
-      if (buffer.length === 0) {
-        return {
-          status: 400,
-          body: { error: "Empty base64Image data." },
-        };
-      }
-      if (buffer.length > 8 * 1024 * 1024) {
-        return {
-          status: 400,
-          body: { error: "Image size exceeds 8MB limit." },
-        };
-      }
-    } catch {
-      return {
-        status: 400,
-        body: { error: "Invalid base64 encoding." },
-      };
-    }
-
-    if (!promptText || typeof promptText !== "string") {
-      return {
-        status: 400,
-        body: { error: "Missing promptText instruction." },
       };
     }
 

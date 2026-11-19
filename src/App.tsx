@@ -23,10 +23,12 @@ import {
   LogOut,
   User,
   Lock,
-  CheckCircle2
+  CheckCircle2,
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
+import { jsPDF } from "jspdf";
 import { PRODUCT_TYPES, COLORS, ENVIRONMENTS, MODEL_TYPES, PRINT_EFFECTS, ProductType, Scenario } from "./data/products";
 import { translations } from "./translations";
 import { LandingPage } from "./components/LandingPage";
@@ -215,15 +217,8 @@ export default function App() {
 
   // Settings & AI provider state
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [aiProvider, setAiProvider] = useState<string>(() => {
-    try {
-      return localStorage.getItem("mockup_provider") || "gemini";
-    } catch {
-      return "gemini";
-    }
-  }); // "gemini" or "openrouter"
+  const aiProvider = "openrouter";
   const [openrouterApiKey, setOpenrouterApiKey] = useState<string>("");
-  const [geminiApiKey, setGeminiApiKey] = useState<string>("");
   const [openrouterModel, setOpenrouterModel] = useState<string>(() => {
     try {
       return localStorage.getItem("mockup_or_model") || "google/gemini-2.5-flash-image";
@@ -237,12 +232,6 @@ export default function App() {
       localStorage.setItem("mockup_lang", lang);
     } catch {}
   }, [lang]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("mockup_provider", aiProvider);
-    } catch {}
-  }, [aiProvider]);
 
   useEffect(() => {
     try {
@@ -541,8 +530,8 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           base64Image: optimizedBase64,
           mimeType: exportMimeType,
           provider: aiProvider,
-          apiKey: aiProvider === "openrouter" ? openrouterApiKey : geminiApiKey,
-          model: aiProvider === "openrouter" ? openrouterModel : undefined
+          apiKey: openrouterApiKey,
+          model: openrouterModel
         })
       });
 
@@ -667,6 +656,106 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     link.href = url;
     link.download = `Mockup-Pro-${productType}-${id}.png`;
     link.click();
+  };
+
+  const handleDownloadFormat = async (dataUrl: string, scenarioId: string, format: "png" | "jpg" | "pdf") => {
+    setOpenShareMenuId(null);
+    if (!dataUrl) return;
+
+    if (format === "png") {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `Mockup-Pro-${productType}-${scenarioId}.png`;
+      link.click();
+    } else if (format === "jpg") {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = dataUrl;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width || 800;
+        canvas.height = img.height || 800;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        const jpgUrl = canvas.toDataURL("image/jpeg", 0.95);
+        const link = document.createElement("a");
+        link.href = jpgUrl;
+        link.download = `Mockup-Pro-${productType}-${scenarioId}.jpg`;
+        link.click();
+      };
+    } else if (format === "pdf") {
+      try {
+        const doc = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+
+        doc.setFillColor(30, 22, 17);
+        doc.rect(0, 0, 210, 30, "F");
+
+        doc.setTextColor(255, 249, 245);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("MOCKUPSTUDIO PRO", 15, 15);
+
+        doc.setFontSize(10);
+        doc.setTextColor(241, 100, 30);
+        doc.text("PRODUCTION SPECIFICATION SHEET // SCHEDA TECNICA DI PRODUZIONE", 15, 23);
+
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Dettagli Produzione & Specifiche Tecniche", 15, 45);
+
+        const selectedProd = PRODUCT_TYPES.find((p) => p.id === productType);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+
+        let y = 55;
+        const lineHeight = 7;
+
+        const details = [
+          `Data/Ora: ${new Date().toLocaleString()}`,
+          `ID Mockup / Scenario: ${scenarioId}`,
+          `Prodotto: ${selectedProd?.label || productType} (${selectedProd?.category || "Generale"})`,
+          `Colore Base / Materiale: ${productColor}`,
+          `Finitura di Stampa / Effetto: ${printEffect}`,
+          `Posizionamento Grafica: ${placement}`,
+          `Scala Grafica: ${Math.round(scale * 100)}%`,
+          `Rimozione Sfondo: ${bgRemoval}`,
+          customText ? `Testo Personalizzato: "${customText}" (${textFont}, ${textColor}, ${textPosition})` : null,
+          extraDetails ? `Note Extra: ${extraDetails}` : null,
+        ].filter(Boolean);
+
+        details.forEach((line) => {
+          doc.text(`• ${line}`, 15, y);
+          y += lineHeight;
+        });
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Anteprima Render Fotorealistico:", 15, y + 5);
+
+        try {
+          doc.addImage(dataUrl, "PNG", 15, y + 10, 90, 90);
+        } catch (e) {
+          console.warn("Could not embed image into PDF:", e);
+        }
+
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Generato con MockupStudio Pro • Documento ufficiale per uso produttivo e commerciale.", 15, 285);
+
+        doc.save(`Scheda-Tecnica-${productType}-${scenarioId}.pdf`);
+        setFeedbackMessage({ type: "success", text: "Scheda tecnica PDF generata con successo!" });
+      } catch (err: any) {
+        console.error("PDF generation error:", err);
+        setFeedbackMessage({ type: "error", text: "Impossibile generare il PDF." });
+      }
+    }
   };
 
   const getOrCreateShareUrl = async (dataUrl: string, scenarioId: string = "mockup"): Promise<string> => {
@@ -951,7 +1040,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                   {t.brandTitle} <span className="text-[#F1641E] font-extrabold">Studio</span>
                 </h1>
                 <p className="text-stone-500 text-[10px] tracking-wider uppercase font-semibold mt-0.5">
-                  {t.aiEngine}: {aiProvider === "openrouter" ? "OpenRouter AI" : "Google Gemini Flash"}
+                  {t.aiEngine}
                 </p>
               </div>
             </div>
@@ -1417,7 +1506,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                               {openShareMenuId === scenario.id && (
                                 <div
                                   role="menu"
-                                  className="absolute bottom-full right-0 mb-2 w-52 bg-white border border-stone-200 rounded-xl shadow-lg p-1.5 z-30 flex flex-col gap-1"
+                                  className="absolute bottom-full right-0 mb-2 w-64 bg-white border border-stone-200 rounded-xl shadow-lg p-1.5 z-30 flex flex-col gap-1"
                                 >
                                   <button
                                     type="button"
@@ -1428,18 +1517,35 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                                     <Share2 size={14} className="shrink-0" />
                                     <span>{t.nativeShare}</span>
                                   </button>
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    onClick={() => {
-                                      downloadImage(generatedMockups[scenario.id], scenario.id);
-                                      setOpenShareMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
-                                  >
-                                    <Download size={14} className="shrink-0" />
-                                    <span>{t.downloadBtn || "Scarica Immagine"}</span>
-                                  </button>
+                                  <div className="border-t border-stone-100 my-1 pt-1">
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => handleDownloadFormat(generatedMockups[scenario.id], scenario.id, "png")}
+                                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Download size={14} className="shrink-0 text-emerald-600" />
+                                      <span>{t.downloadPng || "Scarica PNG"}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => handleDownloadFormat(generatedMockups[scenario.id], scenario.id, "jpg")}
+                                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Download size={14} className="shrink-0 text-blue-600" />
+                                      <span>{t.downloadJpg || "Scarica JPG"}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => handleDownloadFormat(generatedMockups[scenario.id], scenario.id, "pdf")}
+                                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer border-t border-stone-100 mt-1 pt-2"
+                                    >
+                                      <FileText size={14} className="shrink-0 text-[#F1641E]" />
+                                      <span>{t.downloadPdf || "Scarica Scheda Tecnica (PDF)"}</span>
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </div>

@@ -93,7 +93,7 @@ export const translations: Record<string, Record<string, string>> = {
     openrouterKey: "Chiave API OpenRouter",
     geminiKey: "Chiave API Gemini",
     saveSettings: "Salva Impostazioni",
-    aiEngine: "Motore IA Selezionato",
+    aiEngine: "OpenRouter AI",
     footerText: "MockupStudio Pro. Tutti i diritti riservati. Motore universale di visualizzazione e-commerce.",
     settingsLabel: "Settings",
     aiTransformation: "AI Transformation",
@@ -126,7 +126,7 @@ export const translations: Record<string, Record<string, string>> = {
     backToSignIn: "Torna ad Accedi",
     resetLinkSent: "Email di recupero inviata! Controlla la tua casella di posta.",
     marketingConsent: "Accetto di ricevere novità e offerte via email",
-    privacyTextBefore: "Registrandoti accetti i nostri Termini di Servizio e la nostra",
+    privacyTextBefore: "Registrandoti accetti la nostra",
     privacyLink: "Informativa sulla Privacy",
     signUpSuccessTitle: "Registrazione completata!",
     signUpSuccessDesc: "Controlla la tua email per confermare.",
@@ -146,7 +146,12 @@ export const translations: Record<string, Record<string, string>> = {
     passwordUpdateError: "Errore durante l'aggiornamento della password. Riprova.",
     openrouterNotice: "Hai una chiave OpenRouter? Inseriscila qui: generazioni illimitate (l'uso lo paghi tu su OpenRouter). Senza chiave hai 15 generazioni gratuite al giorno.",
     unlimitedKeyBtn: "Generazioni illimitate: usa la tua chiave",
-    dailyLimitReached: "Limite giornaliero raggiunto"
+    dailyLimitReached: "Limite giornaliero raggiunto",
+    downloadPng: "Scarica PNG",
+    downloadJpg: "Scarica JPG",
+    downloadPdf: "Scarica Scheda Tecnica (PDF)",
+    close: "Chiudi",
+    downloadBtn: "Scarica"
   },
   en: {
     brandTitle: "MockupStudio Pro",
@@ -242,7 +247,7 @@ export const translations: Record<string, Record<string, string>> = {
     openrouterKey: "OpenRouter API Key",
     geminiKey: "Gemini API Key",
     saveSettings: "Save Settings",
-    aiEngine: "Selected AI Engine",
+    aiEngine: "OpenRouter AI",
     footerText: "MockupStudio Pro. All rights reserved. Universal e-commerce visualization engine.",
     settingsLabel: "Settings",
     aiTransformation: "AI Transformation",
@@ -275,7 +280,7 @@ export const translations: Record<string, Record<string, string>> = {
     backToSignIn: "Back to Sign In",
     resetLinkSent: "Reset link sent! Check your email inbox.",
     marketingConsent: "I agree to receive news and offers via email",
-    privacyTextBefore: "By signing up you agree to our Terms of Service and our",
+    privacyTextBefore: "By signing up you agree to our",
     privacyLink: "Privacy Policy",
     signUpSuccessTitle: "Registration completed!",
     signUpSuccessDesc: "Check your email to confirm.",
@@ -295,7 +300,12 @@ export const translations: Record<string, Record<string, string>> = {
     passwordUpdateError: "Error updating password. Please try again.",
     openrouterNotice: "Do you have an OpenRouter key? Enter it here: unlimited generations (you pay for usage on OpenRouter). Without a key, you have 15 free generations per day.",
     unlimitedKeyBtn: "Unlimited generations: use your key",
-    dailyLimitReached: "Daily limit reached"
+    dailyLimitReached: "Daily limit reached",
+    downloadPng: "Download PNG",
+    downloadJpg: "Download JPG",
+    downloadPdf: "Download Tech Sheet (PDF)",
+    close: "Close",
+    downloadBtn: "Download"
   },
   es: {
     brandTitle: "MockupStudio Pro",
@@ -391,7 +401,7 @@ export const translations: Record<string, Record<string, string>> = {
     openrouterKey: "Clave API OpenRouter",
     geminiKey: "Clave API Gemini",
     saveSettings: "Guardar Ajustes",
-    aiEngine: "Motor de IA Seleccionado",
+    aiEngine: "OpenRouter AI",
     footerText: "MockupStudio Pro. Todos los derechos reservados. Motor universal de visualización e-commerce.",
     settingsLabel: "Settings",
     aiTransformation: "Transformación IA",
@@ -424,7 +434,7 @@ export const translations: Record<string, Record<string, string>> = {
     backToSignIn: "Back to Sign In",
     resetLinkSent: "Reset link sent! Check your email inbox.",
     marketingConsent: "I agree to receive news and offers via email",
-    privacyTextBefore: "By signing up you agree to our Terms of Service and our",
+    privacyTextBefore: "By signing up you agree to our",
     privacyLink: "Privacy Policy",
     signUpSuccessTitle: "Registration completed!",
     signUpSuccessDesc: "Check your email to confirm.",
@@ -444,7 +454,12 @@ export const translations: Record<string, Record<string, string>> = {
     passwordUpdateError: "Error al actualizar la contraseña. Inténtalo de nuevo.",
     openrouterNotice: "¿Tienes una clave de OpenRouter? Introdúcela aquí: generaciones ilimitadas (pagas el uso en OpenRouter). Sin clave, tienes 15 generaciones gratuitas al día.",
     unlimitedKeyBtn: "Generaciones ilimitadas: usa tu clave",
-    dailyLimitReached: "Límite diario alcanzado"
+    dailyLimitReached: "Límite diario alcanzado",
+    downloadPng: "Descargar PNG",
+    downloadJpg: "Descargar JPG",
+    downloadPdf: "Descargar Ficha Técnica (PDF)",
+    close: "Cerrar",
+    downloadBtn: "Descargar"
   },
   fr: {
     brandTitle: "MockupStudio Pro",
@@ -540,7 +555,7 @@ export const translations: Record<string, Record<string, string>> = {
     openrouterKey: "Clé API OpenRouter",
     geminiKey: "Clé API Gemini",
     saveSettings: "Enregistrer",
-    aiEngine: "Moteur IA Sélectionné",
+    aiEngine: "OpenRouter AI",
     footerText: "MockupStudio Pro. Tous droits réservés. Moteur universel de visualisation e-commerce.",
     settingsLabel: "Settings",
     aiTransformation: "Transformation IA",
@@ -573,7 +588,7 @@ export const translations: Record<string, Record<string, string>> = {
     backToSignIn: "Back to Sign In",
     resetLinkSent: "Reset link sent! Check your email inbox.",
     marketingConsent: "I agree to receive news and offers via email",
-    privacyTextBefore: "By signing up you agree to our Terms of Service and our",
+    privacyTextBefore: "By signing up you agree to our",
     privacyLink: "Privacy Policy",
     signUpSuccessTitle: "Registration completed!",
     signUpSuccessDesc: "Check your email to confirm.",
@@ -593,7 +608,12 @@ export const translations: Record<string, Record<string, string>> = {
     passwordUpdateError: "Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.",
     openrouterNotice: "Vous avez une clé OpenRouter ? Entrez-la ici : générations illimitées (vous payez l'utilisation sur OpenRouter). Sans clé, vous avez 15 générations gratuites par jour.",
     unlimitedKeyBtn: "Générations illimitées : utilisez votre clé",
-    dailyLimitReached: "Limite quotidienne atteinte"
+    dailyLimitReached: "Limite quotidienne atteinte",
+    downloadPng: "Télécharger PNG",
+    downloadJpg: "Télécharger JPG",
+    downloadPdf: "Télécharger Fiche Technique (PDF)",
+    close: "Fermer",
+    downloadBtn: "Télécharger"
   },
   de: {
     brandTitle: "MockupStudio Pro",
@@ -689,7 +709,7 @@ export const translations: Record<string, Record<string, string>> = {
     openrouterKey: "OpenRouter API-Schlüssel",
     geminiKey: "Gemini API-Schlüssel",
     saveSettings: "Einstellungen Speichern",
-    aiEngine: "Ausgewählte KI-Engine",
+    aiEngine: "OpenRouter AI",
     footerText: "MockupStudio Pro. Alle Rechte vorbehalten. Universelle E-Commerce-Visualisierungs-Engine.",
     settingsLabel: "Settings",
     aiTransformation: "KI-Transformation",
@@ -722,7 +742,7 @@ export const translations: Record<string, Record<string, string>> = {
     backToSignIn: "Back to Sign In",
     resetLinkSent: "Reset link sent! Check your email inbox.",
     marketingConsent: "I agree to receive news and offers via email",
-    privacyTextBefore: "By signing up you agree to our Terms of Service and our",
+    privacyTextBefore: "By signing up you agree to our",
     privacyLink: "Privacy Policy",
     signUpSuccessTitle: "Registration completed!",
     signUpSuccessDesc: "Check your email to confirm.",
@@ -742,6 +762,11 @@ export const translations: Record<string, Record<string, string>> = {
     passwordUpdateError: "Fehler beim Aktualisieren des Passworts. Bitte versuchen Sie es erneut.",
     openrouterNotice: "Haben Sie einen OpenRouter-Schlüssel? Hier eingeben: unbegrenzte Generierungen (Sie bezahlen die Nutzung auf OpenRouter). Ohne Schlüssel haben Sie 15 kostenlose Generierungen pro Tag.",
     unlimitedKeyBtn: "Unbegrenzte Generierungen: Verwenden Sie Ihren Schlüssel",
-    dailyLimitReached: "Tägliches Limit erreicht"
+    dailyLimitReached: "Tägliches Limit erreicht",
+    downloadPng: "PNG herunterladen",
+    downloadJpg: "JPG herunterladen",
+    downloadPdf: "Produktions-Datenblatt (PDF)",
+    close: "Schließen",
+    downloadBtn: "Herunterladen"
   }
 };
