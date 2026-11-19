@@ -21,7 +21,9 @@ import {
   Share2,
   Check,
   LogOut,
-  User
+  User,
+  Lock,
+  CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
@@ -104,6 +106,12 @@ export default function App() {
   });
   const t = translations[lang] || translations.it;
 
+  const [showPasswordRecoveryModal, setShowPasswordRecoveryModal] = useState<boolean>(false);
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [recoveryLoading, setRecoveryLoading] = useState<boolean>(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySuccessNotification, setRecoverySuccessNotification] = useState<string | null>(null);
+
   // Supabase Auth listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
@@ -112,8 +120,11 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
+      if (event === "PASSWORD_RECOVERY") {
+        setShowPasswordRecoveryModal(true);
+      }
       if (!currentSession && viewMode === "studio") {
         setViewMode("landing");
       }
@@ -155,6 +166,41 @@ export default function App() {
     setSession(null);
     setViewMode("landing");
     setFeedbackMessage({ type: "info", text: "Disconnessione effettuata con successo." });
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setRecoveryError(t.passwordTooShort || "La password deve contenere almeno 6 caratteri.");
+      return;
+    }
+
+    setRecoveryLoading(true);
+    setRecoveryError(null);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setNewPassword("");
+      setShowPasswordRecoveryModal(false);
+      const successText = t.passwordUpdatedSuccess || "Password aggiornata con successo!";
+      setRecoverySuccessNotification(successText);
+      setFeedbackMessage({ type: "success", text: successText });
+      setTimeout(() => {
+        setRecoverySuccessNotification(null);
+      }, 5000);
+    } catch (err: any) {
+      console.error("Password update error:", err);
+      setRecoveryError(err.message || t.passwordUpdateError || "Errore durante l'aggiornamento della password.");
+    } finally {
+      setRecoveryLoading(false);
+    }
   };
 
   // Settings & AI provider state
@@ -699,6 +745,108 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     return acc;
   }, {});
 
+  const renderPasswordRecoveryModal = () => {
+    if (!showPasswordRecoveryModal) return null;
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recovery-modal-title"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowPasswordRecoveryModal(false);
+            setRecoveryError(null);
+            setNewPassword("");
+          }
+        }}
+      >
+        <div className="bg-white rounded-2xl max-w-sm w-full border border-stone-200 shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200">
+          <button
+            onClick={() => {
+              setShowPasswordRecoveryModal(false);
+              setRecoveryError(null);
+              setNewPassword("");
+            }}
+            aria-label={t.close || "Chiudi"}
+            className="absolute top-4 right-4 p-1.5 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-[#FFF2EB] p-2.5 rounded-xl border border-orange-200 text-[#F1641E]">
+              <Lock size={20} />
+            </div>
+            <div>
+              <h2 id="recovery-modal-title" className="text-base font-bold text-stone-900 tracking-tight">
+                {t.newPasswordTitle}
+              </h2>
+              <p className="text-xs text-stone-500">
+                {t.newPasswordDesc}
+              </p>
+            </div>
+          </div>
+
+          {recoveryError && (
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2">
+              <Info size={15} className="text-rose-600 shrink-0 mt-0.5" />
+              <span className="leading-snug">{recoveryError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleUpdatePassword} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">
+                {t.newPasswordTitle}
+              </label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t.newPasswordPlaceholder}
+                  autoFocus
+                  className="w-full bg-white border border-stone-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={recoveryLoading || newPassword.length < 6}
+              className="w-full py-2.5 bg-[#F1641E] hover:bg-[#D44E13] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {recoveryLoading && <Loader2 size={14} className="animate-spin" />}
+              {t.updatePasswordBtn}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRecoverySuccessToast = () => {
+    if (!recoverySuccessNotification) return null;
+
+    return (
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200">
+        <CheckCircle2 size={16} className="text-white" />
+        <span>{recoverySuccessNotification}</span>
+        <button
+          onClick={() => setRecoverySuccessNotification(null)}
+          className="ml-2 hover:opacity-80 cursor-pointer"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    );
+  };
+
   if (viewMode === "privacy") {
     return (
       <>
@@ -717,6 +865,8 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setViewMode("privacy");
           }}
         />
+        {renderPasswordRecoveryModal()}
+        {renderRecoverySuccessToast()}
       </>
     );
   }
@@ -751,6 +901,8 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setViewMode("privacy");
           }}
         />
+        {renderPasswordRecoveryModal()}
+        {renderRecoverySuccessToast()}
       </>
     );
   }
@@ -1418,6 +1570,9 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setViewMode("privacy");
           }}
         />
+
+        {renderPasswordRecoveryModal()}
+        {renderRecoverySuccessToast()}
 
       </div>
     </div>

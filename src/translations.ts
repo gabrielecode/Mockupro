@@ -136,7 +136,14 @@ export const translations: Record<string, Record<string, string>> = {
     authRequiredNotice: "Accedi o crea un account per entrare nello Studio di generazione.",
     configSupabaseNotice: "Configura VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nel file .env per connettere Supabase.",
     privacyTitle: "Informativa sulla Privacy",
-    privacyBack: "Torna alla Home"
+    privacyBack: "Torna alla Home",
+    newPasswordTitle: "Nuova password",
+    newPasswordDesc: "Inserisci la tua nuova password (minimo 6 caratteri).",
+    newPasswordPlaceholder: "Nuova password (min. 6 caratteri)",
+    updatePasswordBtn: "Aggiorna password",
+    passwordUpdatedSuccess: "Password aggiornata con successo!",
+    passwordTooShort: "La password deve contenere almeno 6 caratteri.",
+    passwordUpdateError: "Errore durante l'aggiornamento della password. Riprova."
   },
   en: {
     brandTitle: "MockupStudio Pro",
@@ -275,7 +282,14 @@ export const translations: Record<string, Record<string, string>> = {
     authRequiredNotice: "Sign in or create an account to access the Generation Studio.",
     configSupabaseNotice: "Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file to connect Supabase.",
     privacyTitle: "Privacy Policy",
-    privacyBack: "Back to Home"
+    privacyBack: "Back to Home",
+    newPasswordTitle: "New Password",
+    newPasswordDesc: "Enter your new password (minimum 6 characters).",
+    newPasswordPlaceholder: "New password (min. 6 characters)",
+    updatePasswordBtn: "Update Password",
+    passwordUpdatedSuccess: "Password successfully updated!",
+    passwordTooShort: "Password must be at least 6 characters.",
+    passwordUpdateError: "Error updating password. Please try again."
   },
   es: {
     brandTitle: "MockupStudio Pro",
@@ -414,7 +428,14 @@ export const translations: Record<string, Record<string, string>> = {
     authRequiredNotice: "Sign in or create an account to access the Generation Studio.",
     configSupabaseNotice: "Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file to connect Supabase.",
     privacyTitle: "Privacy Policy",
-    privacyBack: "Back to Home"
+    privacyBack: "Back to Home",
+    newPasswordTitle: "Nueva contraseña",
+    newPasswordDesc: "Introduce tu nueva contraseña (mínimo 6 caracteres).",
+    newPasswordPlaceholder: "Nueva contraseña (mín. 6 caracteres)",
+    updatePasswordBtn: "Actualizar contraseña",
+    passwordUpdatedSuccess: "¡Contraseña actualizada con éxito!",
+    passwordTooShort: "La contraseña debe tener al menos 6 caracteres.",
+    passwordUpdateError: "Error al actualizar la contraseña. Inténtalo de nuevo."
   },
   fr: {
     brandTitle: "MockupStudio Pro",
@@ -553,7 +574,14 @@ export const translations: Record<string, Record<string, string>> = {
     authRequiredNotice: "Sign in or create an account to access the Generation Studio.",
     configSupabaseNotice: "Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file to connect Supabase.",
     privacyTitle: "Privacy Policy",
-    privacyBack: "Back to Home"
+    privacyBack: "Back to Home",
+    newPasswordTitle: "Nouveau mot de passe",
+    newPasswordDesc: "Entrez votre nouveau mot de passe (minimum 6 caractères).",
+    newPasswordPlaceholder: "Nouveau mot de passe (min. 6 caractères)",
+    updatePasswordBtn: "Mettre à jour le mot de passe",
+    passwordUpdatedSuccess: "Mot de passe mis à jour avec succès !",
+    passwordTooShort: "Le mot de passe doit comporter au moins 6 caractères.",
+    passwordUpdateError: "Erreur lors de la mise à jour du mot de passe. Veuillez réessayer."
   },
   de: {
     brandTitle: "MockupStudio Pro",
@@ -692,6 +720,13 @@ export const translations: Record<string, Record<string, string>> = {
     authRequiredNotice: "Sign in or create an account to access the Generation Studio.",
     configSupabaseNotice: "Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file to connect Supabase.",
     privacyTitle: "Privacy Policy",
-    privacyBack: "Back to Home"
+    privacyBack: "Back to Home",
+    newPasswordTitle: "Neues Passwort",
+    newPasswordDesc: "Geben Sie Ihr neues Passwort ein (mindestens 6 Zeichen).",
+    newPasswordPlaceholder: "Neues Passwort (mind. 6 Zeichen)",
+    updatePasswordBtn: "Passwort aktualisieren",
+    passwordUpdatedSuccess: "Passwort erfolgreich aktualisiert!",
+    passwordTooShort: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+    passwordUpdateError: "Fehler beim Aktualisieren des Passworts. Bitte versuchen Sie es erneut."
   }
 };

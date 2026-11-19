@@ -73,13 +73,16 @@ export async function generateMockup(
 
     // 2. Supabase use_generation RPC verification
     const SUPABASE_URL =
-      process.env.SUPABASE_URL ||
-      process.env.VITE_SUPABASE_URL ||
-      "https://placeholder-project.supabase.co";
+      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SUPABASE_ANON_KEY =
-      process.env.SUPABASE_ANON_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      "placeholder-anon-key";
+      process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return {
+        status: 503,
+        body: { error: "Servizio temporaneamente non disponibile" },
+      };
+    }
 
     const Authorization = authHeader.startsWith("Bearer ")
       ? authHeader
@@ -97,16 +100,28 @@ export async function generateMockup(
 
     if (rpcError) {
       console.error("Supabase RPC use_generation error:", rpcError);
-      if (
+      const errMsg = (rpcError.message || "").toLowerCase();
+      const errDetails = ((rpcError as any).details || "").toLowerCase();
+      const isAuthError =
         rpcError.code === "PGRST301" ||
-        rpcError.message?.toLowerCase().includes("jwt") ||
-        rpcError.message?.toLowerCase().includes("unauthorized")
-      ) {
+        (rpcError as any).status === 401 ||
+        errMsg.includes("jwt") ||
+        errMsg.includes("unauthorized") ||
+        errMsg.includes("auth") ||
+        errDetails.includes("jwt") ||
+        errDetails.includes("unauthorized");
+
+      if (isAuthError) {
         return {
           status: 401,
           body: { error: "Token non valido o sessione scaduta." },
         };
       }
+
+      return {
+        status: 503,
+        body: { error: "Servizio temporaneamente non disponibile" },
+      };
     }
 
     if (allowed === false) {
