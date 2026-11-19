@@ -342,6 +342,22 @@ export default function App() {
   const [openShareMenuId, setOpenShareMenuId] = useState<string | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState<boolean>(false);
+
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setFeedbackMessage({ type: "error", text: "Seleziona un file immagine valido (PNG, JPG, SVG, WEBP)." });
+      return;
+    }
+    const r = new FileReader();
+    r.onload = (f) => {
+      if (f.target?.result) {
+        setUserImage(f.target.result as string);
+        setFeedbackMessage({ type: "success", text: "Immagine caricata correttamente!" });
+      }
+    };
+    r.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (!openShareMenuId) return;
@@ -1186,15 +1202,9 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const r = new FileReader();
-                    r.onload = (f) => {
-                      if (f.target?.result) {
-                        setUserImage(f.target.result as string);
-                        setFeedbackMessage({ type: "success", text: "Immagine caricata correttamente!" });
-                      }
-                    };
-                    r.readAsDataURL(file);
+                    handleImageFile(file);
                   }
+                  e.target.value = "";
                 }}
                 accept="image/*"
               />
@@ -1524,12 +1534,40 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
             {/* Scenarios Grid */}
             {!userImage ? (
-              <div className="py-24 text-center bg-white rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center shadow-xs">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDraggingFile(true);
+                }}
+                onDragLeave={() => setIsDraggingFile(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingFile(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    handleImageFile(file);
+                  }
+                }}
+                className={`py-24 text-center bg-white rounded-2xl border-2 border-dashed flex flex-col items-center shadow-xs cursor-pointer transition-colors ${
+                  isDraggingFile
+                    ? "border-[#F1641E] bg-[#FFF2EB]/50"
+                    : "border-stone-200 hover:border-[#F1641E]/60 hover:bg-orange-50/20"
+                }`}
+              >
                 <div className="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center mb-4">
                   <UploadCloud size={24} className="text-[#F1641E]" />
                 </div>
                 <h2 className="text-stone-900 font-bold tracking-tight text-sm mb-1">{t.uploadLogo}</h2>
-                <p className="text-stone-400 text-[10px] uppercase tracking-wider">Trascina un file oppure usa il pulsante Carica Esempio</p>
+                <p className="text-stone-400 text-[10px] uppercase tracking-wider">Clicca, trascina un file oppure usa il pulsante Carica Esempio</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
