@@ -19,14 +19,19 @@ import {
   ArrowLeft,
   SlidersHorizontal,
   Share2,
-  Link2,
-  Check
+  Check,
+  LogOut,
+  User
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
 import { PRODUCT_TYPES, COLORS, ENVIRONMENTS, MODEL_TYPES, PRINT_EFFECTS, ProductType, Scenario } from "./data/products";
 import { translations } from "./translations";
 import { LandingPage } from "./components/LandingPage";
+import { AuthModal } from "./components/AuthModal";
+import { PrivacyPolicy } from "./components/PrivacyPolicy";
+import { supabase } from "./lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 
 // Local static placeholder logo generator using canvas
 const generatePlaceholderLogo = (text = "CREATIVE LAB"): string => {
@@ -80,7 +85,16 @@ interface FeedbackMessage {
 }
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<"landing" | "studio">("landing");
+  const [viewMode, setViewMode] = useState<"landing" | "studio" | "privacy">(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/privacy") {
+      return "privacy";
+    }
+    return "landing";
+  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
+
   const [lang, setLang] = useState<string>(() => {
     try {
       return localStorage.getItem("mockup_lang") || "it";
@@ -89,6 +103,59 @@ export default function App() {
     }
   });
   const t = translations[lang] || translations.it;
+
+  // Supabase Auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      if (!currentSession && viewMode === "studio") {
+        setViewMode("landing");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [viewMode]);
+
+  // Handle browser back/forward navigation for /privacy
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === "/privacy") {
+        setViewMode("privacy");
+      } else if (viewMode === "privacy") {
+        setViewMode("landing");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [viewMode]);
+
+  const handleEnterStudio = () => {
+    if (session) {
+      setViewMode("studio");
+    } else {
+      setAuthModalTab("signin");
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+    setSession(null);
+    setViewMode("landing");
+    setFeedbackMessage({ type: "info", text: "Disconnessione effettuata con successo." });
+  };
 
   // Settings & AI provider state
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -154,9 +221,7 @@ export default function App() {
   const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>([]);
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [openShareMenuId, setOpenShareMenuId] = useState<string | null>(null);
-  const [sharedLinks, setSharedLinks] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -511,71 +576,45 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     link.click();
   };
 
-  const getOrCreateShareUrl = async (dataUrl: string): Promise<string> => {
-    if (sharedLinks[dataUrl]) {
-      return sharedLinks[dataUrl];
-    }
-
-    const parts = dataUrl.split(",");
-    const base64Data = parts.length > 1 ? parts[1] : parts[0];
-    const mimeMatch = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,/);
-    const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
-
+  const getOrCreateShareUrl = async (dataUrl: string, scenarioId: string = "mockup"): Promise<string> => {
     try {
-      const res = await fetch("/api/mockup/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64Image: base64Data, mimeType })
+      const blobRes = await fetch(dataUrl);
+      const blob = await blobRes.blob();
+      const filename = `Mockup-Pro-${productType}-${scenarioId}.png`;
+      const file = new File([blob], filename, {
+        type: blob.type || "image/png"
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.url) {
-          const fullUrl = new URL(data.url, window.location.origin).toString();
-          setSharedLinks((prev) => ({ ...prev, [dataUrl]: fullUrl }));
-          return fullUrl;
-        }
-      }
-    } catch (err) {
-      console.warn("Falling back to data URL for sharing:", err);
-    }
 
+      if (
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          title: `Mockup ${scenarioId}`,
+          text: `Mockup — ${t.brandTitle}`,
+          files: [file]
+        });
+      } else {
+        downloadImage(dataUrl, scenarioId);
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        downloadImage(dataUrl, scenarioId);
+      }
+    }
     return dataUrl;
   };
 
-  const copyTextToClipboard = async (text: string) => {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return;
-    }
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  };
-
   const handleCopyShareLink = async (scenarioId: string) => {
-    const dataUrl = generatedMockups[scenarioId];
-    if (!dataUrl) return;
-
-    setSharingId(scenarioId);
-    try {
-      const shareUrl = await getOrCreateShareUrl(dataUrl);
-      await copyTextToClipboard(shareUrl);
-      setCopiedId(scenarioId);
-      setFeedbackMessage({ type: "success", text: t.linkCopied });
-      setTimeout(() => {
-        setCopiedId((prev) => (prev === scenarioId ? null : prev));
-      }, 2000);
-      setOpenShareMenuId(null);
-    } catch (err) {
-      console.error("Failed to copy image link:", err);
-      setFeedbackMessage({ type: "error", text: t.shareError });
-    } finally {
-      setSharingId(null);
+    const scenario = dynamicScenarios.find((s) => s.id === scenarioId);
+    if (scenario) {
+      await handleNativeShare(scenario);
+    } else {
+      const dataUrl = generatedMockups[scenarioId];
+      if (dataUrl) {
+        await getOrCreateShareUrl(dataUrl, scenarioId);
+      }
     }
   };
 
@@ -585,48 +624,31 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
 
     setSharingId(scenario.id);
     try {
-      const shareUrl = await getOrCreateShareUrl(dataUrl);
       const blobRes = await fetch(dataUrl);
       const blob = await blobRes.blob();
-      const file = new File([blob], `mockup-${productType}-${scenario.id}.png`, {
+      const filename = `Mockup-Pro-${productType}-${scenario.id}.png`;
+      const file = new File([blob], filename, {
         type: blob.type || "image/png"
       });
 
-      if (typeof navigator.share === "function") {
-        if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: scenario.label,
-            text: `${scenario.label} — ${t.brandTitle}`,
-            files: [file]
-          });
-        } else {
-          await navigator.share({
-            title: scenario.label,
-            text: `${scenario.label} — ${t.brandTitle}`,
-            url: shareUrl
-          });
-        }
-        setOpenShareMenuId(null);
+      if (
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          title: scenario.label,
+          text: `${scenario.label} — ${t.brandTitle}`,
+          files: [file]
+        });
       } else {
-        await copyTextToClipboard(shareUrl);
-        setCopiedId(scenario.id);
-        setFeedbackMessage({ type: "success", text: t.linkCopied });
-        setTimeout(() => {
-          setCopiedId((prev) => (prev === scenario.id ? null : prev));
-        }, 2000);
-        setOpenShareMenuId(null);
+        downloadImage(dataUrl, scenario.id);
       }
+      setOpenShareMenuId(null);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
-        console.error("Native share failed:", err);
-        try {
-          const fallbackUrl = await getOrCreateShareUrl(dataUrl);
-          await copyTextToClipboard(fallbackUrl);
-          setFeedbackMessage({ type: "info", text: t.linkCopied });
-          setOpenShareMenuId(null);
-        } catch {
-          setFeedbackMessage({ type: "error", text: t.shareError });
-        }
+        console.warn("Share failed, downloading mockup:", err);
+        downloadImage(dataUrl, scenario.id);
       }
     } finally {
       setSharingId(null);
@@ -640,14 +662,59 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     return acc;
   }, {});
 
+  if (viewMode === "privacy") {
+    return (
+      <>
+        <PrivacyPolicy lang={lang} onBack={() => setViewMode("landing")} />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          lang={lang}
+          initialTab={authModalTab}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setViewMode("studio");
+          }}
+          onOpenPrivacy={() => {
+            setShowAuthModal(false);
+            setViewMode("privacy");
+          }}
+        />
+      </>
+    );
+  }
+
   if (viewMode === "landing") {
     return (
-      <LandingPage
-        lang={lang}
-        setLang={setLang}
-        onEnterStudio={() => setViewMode("studio")}
-        onOpenSettings={() => setShowSettings(true)}
-      />
+      <>
+        <LandingPage
+          lang={lang}
+          setLang={setLang}
+          onEnterStudio={handleEnterStudio}
+          onOpenSettings={() => setShowSettings(true)}
+          session={session}
+          onSignOut={handleSignOut}
+          onOpenAuth={() => {
+            setAuthModalTab("signin");
+            setShowAuthModal(true);
+          }}
+          onOpenPrivacy={() => setViewMode("privacy")}
+        />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          lang={lang}
+          initialTab={authModalTab}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setViewMode("studio");
+          }}
+          onOpenPrivacy={() => {
+            setShowAuthModal(false);
+            setViewMode("privacy");
+          }}
+        />
+      </>
     );
   }
 
@@ -737,6 +804,20 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                 accept="image/*"
               />
             </label>
+            {session && (
+              <span className="hidden xl:inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 bg-stone-100 border border-stone-200 px-3 py-2 rounded-xl max-w-[170px] truncate" title={session.user?.email || ""}>
+                <User size={13} className="text-[#F1641E] shrink-0" />
+                <span className="truncate">{session.user?.email}</span>
+              </span>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 transition-all flex items-center gap-1.5 cursor-pointer"
+              title={t.signOut || "Esci"}
+            >
+              <LogOut size={14} className="text-stone-500" />
+              <span>{t.signOut || "Esci"}</span>
+            </button>
           </div>
         </header>
 
@@ -1101,15 +1182,13 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                                 aria-haspopup="menu"
                                 title={t.shareBtn}
                                 className={`px-2.5 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
-                                  openShareMenuId === scenario.id || copiedId === scenario.id
+                                  openShareMenuId === scenario.id
                                     ? "bg-[#FFF2EB] text-[#F1641E] border-orange-200"
                                     : "bg-stone-50 hover:bg-[#FFF2EB] text-stone-700 hover:text-[#F1641E] border-stone-200"
                                 }`}
                               >
                                 {sharingId === scenario.id ? (
                                   <Loader2 size={13} className="animate-spin" />
-                                ) : copiedId === scenario.id ? (
-                                  <Check size={13} />
                                 ) : (
                                   <Share2 size={13} />
                                 )}
@@ -1124,24 +1203,23 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
                                   <button
                                     type="button"
                                     role="menuitem"
-                                    onClick={() => handleCopyShareLink(scenario.id)}
-                                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
-                                  >
-                                    {copiedId === scenario.id ? (
-                                      <Check size={14} className="text-emerald-600 shrink-0" />
-                                    ) : (
-                                      <Link2 size={14} className="shrink-0" />
-                                    )}
-                                    <span>{t.copyImageLink}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    role="menuitem"
                                     onClick={() => handleNativeShare(scenario)}
                                     className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
                                   >
                                     <Share2 size={14} className="shrink-0" />
                                     <span>{t.nativeShare}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      downloadImage(generatedMockups[scenario.id], scenario.id);
+                                      setOpenShareMenuId(null);
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-stone-700 hover:bg-[#FFF2EB] hover:text-[#F1641E] transition-colors flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Download size={14} className="shrink-0" />
+                                    <span>{t.downloadBtn || "Scarica Immagine"}</span>
                                   </button>
                                 </div>
                               )}
@@ -1288,6 +1366,21 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             </div>
           </div>
         )}
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          lang={lang}
+          initialTab={authModalTab}
+          onSuccess={() => {
+            setShowAuthModal(false);
+          }}
+          onOpenPrivacy={() => {
+            setShowAuthModal(false);
+            setViewMode("privacy");
+          }}
+        />
 
       </div>
     </div>

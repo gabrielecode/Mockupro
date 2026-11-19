@@ -20,6 +20,20 @@ export function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Whitelist of allowed image generation models
+export const ALLOWED_MODELS = [
+  "gemini-3.1-flash-lite-image",
+  "gemini-2.5-flash-image",
+  "gemini-3-pro-image",
+  "gemini-3.1-flash-image",
+  "google/gemini-2.5-flash-image",
+  "google/gemini-3.1-flash-lite-image",
+  "google/gemini-3.1-flash-image",
+] as const;
+
+export const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite-image";
+export const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.5-flash-image";
+
 export interface GenerateMockupBody {
   promptText?: string;
   base64Image?: string;
@@ -54,6 +68,9 @@ export async function generateMockup(
       apiKey,
       model,
     } = payload || {};
+
+    const rawModel = typeof model === "string" ? model.trim() : "";
+    const isModelAllowed = (ALLOWED_MODELS as readonly string[]).includes(rawModel);
 
     const validProviders = ["gemini", "openrouter"];
     if (!validProviders.includes(provider)) {
@@ -127,7 +144,10 @@ export async function generateMockup(
         };
       }
 
-      const selectedModel = (model && model.trim()) || "google/gemini-2.5-flash-image";
+      const selectedModel =
+        isModelAllowed && rawModel.includes("/")
+          ? rawModel
+          : DEFAULT_OPENROUTER_MODEL;
       const referer =
         process.env.APP_URL ||
         (process.env.VERCEL_URL
@@ -247,7 +267,9 @@ export async function generateMockup(
       });
 
       const geminiModel =
-        model && !model.includes("/") ? model : "gemini-3.1-flash-lite-image";
+        isModelAllowed && !rawModel.includes("/")
+          ? rawModel
+          : DEFAULT_GEMINI_MODEL;
 
       const response = await customAi.models.generateContent({
         model: geminiModel,

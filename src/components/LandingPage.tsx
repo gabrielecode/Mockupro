@@ -1,21 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X, LogOut, User } from "lucide-react";
 import { translations } from "../translations";
 import { PRODUCT_TYPES } from "../data/products";
 import heroImg from "../assets/images/mockup_studio_hero_1794995342264.webp";
+import type { Session } from "@supabase/supabase-js";
 
 interface LandingPageProps {
   lang: string;
   setLang: (l: string) => void;
   onEnterStudio: () => void;
   onOpenSettings: () => void;
+  session?: Session | null;
+  onSignOut?: () => void;
+  onOpenAuth?: () => void;
+  onOpenPrivacy?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   lang,
   setLang,
   onEnterStudio,
-  onOpenSettings
+  onOpenSettings,
+  session,
+  onSignOut,
+  onOpenAuth,
+  onOpenPrivacy
 }) => {
   const t = translations[lang] || translations.it;
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -90,12 +99,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </select>
             </div>
 
-            <button
-              onClick={onEnterStudio}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-[#F1641E] rounded-xl hover:bg-[#D44E13] transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 shadow-xs cursor-pointer"
-            >
-              {t.getStarted} <ArrowRight size={14} />
-            </button>
+            {session ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden xl:inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl max-w-[160px] truncate" title={session.user?.email || ""}>
+                  <User size={13} className="text-[#F1641E] shrink-0" />
+                  <span className="truncate">{session.user?.email}</span>
+                </span>
+                <button
+                  onClick={onSignOut}
+                  className="px-3 py-2 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl border border-stone-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  title={t.signOut || "Esci"}
+                >
+                  <LogOut size={13} className="text-stone-500" />
+                  <span className="hidden sm:inline">{t.signOut || "Esci"}</span>
+                </button>
+                <button
+                  onClick={onEnterStudio}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#F1641E] rounded-xl hover:bg-[#D44E13] transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 shadow-xs cursor-pointer"
+                >
+                  {t.getStarted} <ArrowRight size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onOpenAuth}
+                  className="px-3.5 py-2 text-xs font-bold text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  {t.tabSignIn || "Accedi"}
+                </button>
+                <button
+                  onClick={onEnterStudio}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#F1641E] rounded-xl hover:bg-[#D44E13] transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 shadow-xs cursor-pointer"
+                >
+                  {t.getStarted} <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
 
             {/* Hamburger button for mobile (< md) */}
             <button
@@ -147,7 +187,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {t.navFaq}
             </a>
 
-            <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
+            {/* Mobile Auth actions */}
+            <div className="pt-3 border-t border-stone-200 flex flex-col gap-2">
+              {session ? (
+                <>
+                  <div className="text-xs text-stone-500 font-medium truncate flex items-center gap-1.5 py-1">
+                    <User size={13} className="text-[#F1641E]" />
+                    <span className="truncate">{session.user?.email}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onSignOut?.();
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-stone-100 text-stone-700 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LogOut size={14} /> {t.signOut || "Esci"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onEnterStudio();
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#F1641E] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {t.getStarted} <ArrowRight size={14} />
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth?.();
+                    }}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-stone-100 text-stone-700 text-xs font-bold text-center cursor-pointer"
+                  >
+                    {t.tabSignIn || "Accedi"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onEnterStudio();
+                    }}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-[#F1641E] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {t.getStarted} <ArrowRight size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
               <span className="text-xs text-stone-500 font-semibold uppercase">Lingua</span>
               <div className="relative flex items-center bg-stone-100 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700">
                 <Globe size={13} className="text-stone-500 mr-1.5 shrink-0" />
@@ -546,6 +637,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <a href="#features" className="hover:text-stone-900 transition-colors">{t.navFeatures}</a>
             <a href="#marketplaces" className="hover:text-stone-900 transition-colors">{t.navMarketplaces}</a>
             <a href="#faq" className="hover:text-stone-900 transition-colors">{t.navFaq}</a>
+            <a
+              href="/privacy"
+              onClick={(e) => {
+                if (onOpenPrivacy) {
+                  e.preventDefault();
+                  onOpenPrivacy();
+                }
+              }}
+              className="hover:text-stone-900 transition-colors cursor-pointer"
+            >
+              {t.privacyTitle || "Privacy"}
+            </a>
           </div>
 
           {/* Column 3: Language & Settings */}
