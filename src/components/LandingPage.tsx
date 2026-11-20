@@ -14,6 +14,7 @@ interface LandingPageProps {
   onSignOut?: () => void;
   onOpenAuth?: () => void;
   onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -24,7 +25,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   session,
   onSignOut,
   onOpenAuth,
-  onOpenPrivacy
+  onOpenPrivacy,
+  onOpenTerms
 }) => {
   const t = translations[lang] || translations.it;
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -195,9 +197,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onOpenPrivacy();
                 }
               }}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.privacyTitle || "Privacy & Cookie Policy"}
+            </a>
+            <a
+              href="/terms"
+              onClick={(e) => {
+                setMobileMenuOpen(false);
+                if (onOpenTerms) {
+                  e.preventDefault();
+                  onOpenTerms();
+                }
+              }}
               className="hover:text-stone-900 transition-colors py-2"
             >
-              {t.privacyTitle || "Privacy Policy"}
+              {t.termsTitle || "Termini di Servizio"}
             </a>
 
             {/* Mobile Auth actions */}
@@ -660,7 +675,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               }}
               className="hover:text-stone-900 transition-colors cursor-pointer"
             >
-              {t.privacyTitle || "Privacy"}
+              {t.privacyTitle || "Privacy & Cookie"}
+            </a>
+            <a
+              href="/terms"
+              onClick={(e) => {
+                if (onOpenTerms) {
+                  e.preventDefault();
+                  onOpenTerms();
+                }
+              }}
+              className="hover:text-stone-900 transition-colors cursor-pointer"
+            >
+              {t.termsTitle || "Termini di Servizio"}
             </a>
           </div>
 
@@ -684,8 +711,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button onClick={onOpenSettings} className="font-semibold hover:text-stone-900 cursor-pointer">{t.settingsLabel}</button>
           </div>
         </div>
-        <div className="max-w-[1440px] mx-auto mt-8 pt-6 border-t border-stone-100 text-center text-stone-400">
+        <div className="max-w-[1440px] mx-auto mt-8 pt-6 border-t border-stone-100 text-center text-stone-500 space-y-1">
           <p>{t.footerText}</p>
+          <p className="text-[11px] text-stone-400">
+            Gabriele Sestito · Morbio Inferiore, Ticino, Svizzera · mockupro@proton.me
+          </p>
         </div>
       </footer>
     </div>

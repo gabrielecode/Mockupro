@@ -41,6 +41,22 @@
       "destination": "/de/index.html"
     },
     {
+      "source": "/en/terms",
+      "destination": "/en/index.html"
+    },
+    {
+      "source": "/es/terms",
+      "destination": "/es/index.html"
+    },
+    {
+      "source": "/fr/terms",
+      "destination": "/fr/index.html"
+    },
+    {
+      "source": "/de/terms",
+      "destination": "/de/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

@@ -34,6 +34,8 @@ import { translations } from "./translations";
 import { LandingPage } from "./components/LandingPage";
 import { AuthModal } from "./components/AuthModal";
 import { PrivacyPolicy } from "./components/PrivacyPolicy";
+import { TermsOfService } from "./components/TermsOfService";
+import { LEGAL_CONFIG } from "./config/legal";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 
@@ -94,25 +96,35 @@ type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 const isSupportedLang = (val: string): val is SupportedLang =>
   (SUPPORTED_LANGS as readonly string[]).includes(val);
 
-const parseUrlState = (pathname: string): { lang: SupportedLang; isPrivacy: boolean } => {
+const parseUrlState = (
+  pathname: string
+): { lang: SupportedLang; page: "landing" | "privacy" | "terms" } => {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length > 0 && isSupportedLang(segments[0])) {
+    const sub = segments[1];
     return {
       lang: segments[0],
-      isPrivacy: segments[1] === "privacy",
+      page: sub === "privacy" ? "privacy" : sub === "terms" ? "terms" : "landing",
     };
   }
+  const first = segments[0];
   return {
     lang: "it",
-    isPrivacy: segments[0] === "privacy",
+    page: first === "privacy" ? "privacy" : first === "terms" ? "terms" : "landing",
   };
 };
 
-const buildPathForState = (targetLang: string, mode: "landing" | "studio" | "privacy"): string => {
+const buildPathForState = (
+  targetLang: string,
+  mode: "landing" | "studio" | "privacy" | "terms"
+): string => {
   const normalizedLang: SupportedLang = isSupportedLang(targetLang) ? targetLang : "it";
   const prefix = normalizedLang === "it" ? "" : `/${normalizedLang}`;
   if (mode === "privacy") {
     return `${prefix}/privacy`;
+  }
+  if (mode === "terms") {
+    return `${prefix}/terms`;
   }
   return prefix || "/";
 };
@@ -125,9 +137,9 @@ const LANG_SUGGESTION_COPY: Record<Exclude<SupportedLang, "it">, { label: string
 };
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<"landing" | "studio" | "privacy">(() => {
+  const [viewMode, setViewMode] = useState<"landing" | "studio" | "privacy" | "terms">(() => {
     if (typeof window !== "undefined") {
-      return parseUrlState(window.location.pathname).isPrivacy ? "privacy" : "landing";
+      return parseUrlState(window.location.pathname).page;
     }
     return "landing";
   });
@@ -203,7 +215,7 @@ export default function App() {
     setSuggestedLang(null);
   };
 
-  const navigateTo = (mode: "landing" | "studio" | "privacy") => {
+  const navigateTo = (mode: "landing" | "studio" | "privacy" | "terms") => {
     if (typeof window !== "undefined") {
       const targetPath = buildPathForState(lang, mode);
       if (window.location.pathname !== targetPath) {
@@ -213,26 +225,39 @@ export default function App() {
     setViewMode(mode);
   };
 
-  // Handle browser back/forward navigation for language prefixes and /privacy
+  // Handle browser back/forward navigation for language prefixes, /privacy and /terms
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      const { lang: urlLang, isPrivacy } = parseUrlState(window.location.pathname);
+      const { lang: urlLang, page } = parseUrlState(window.location.pathname);
       setLangState(urlLang);
       if (typeof document !== "undefined") {
         document.documentElement.lang = urlLang;
       }
       setSuggestedLang(null);
 
-      if (isPrivacy) {
+      if (page === "privacy") {
         setViewMode("privacy");
+      } else if (page === "terms") {
+        setViewMode("terms");
       } else {
-        const stateMode = event.state?.mode as "landing" | "studio" | "privacy" | undefined;
+        const stateMode = event.state?.mode as
+          | "landing"
+          | "studio"
+          | "privacy"
+          | "terms"
+          | undefined;
         if (stateMode === "studio" && session) {
           setViewMode("studio");
         } else if (stateMode === "landing") {
           setViewMode("landing");
         } else {
-          setViewMode((prev) => (prev === "privacy" ? (session ? "studio" : "landing") : prev));
+          setViewMode((prev) =>
+            prev === "privacy" || prev === "terms"
+              ? session
+                ? "studio"
+                : "landing"
+              : prev
+          );
         }
       }
     };
@@ -297,6 +322,8 @@ export default function App() {
 
   // Settings & AI provider state
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [marketingConsentUpdating, setMarketingConsentUpdating] = useState<boolean>(false);
+  const [consentUpdateFeedback, setConsentUpdateFeedback] = useState<string | null>(null);
   const aiProvider = "openrouter";
   const [openrouterApiKey, setOpenrouterApiKey] = useState<string>("");
   const [openrouterModel, setOpenrouterModel] = useState<string>(() => {
@@ -1055,6 +1082,217 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
     );
   };
 
+  const handleToggleMarketingConsent = async () => {
+    if (!session || marketingConsentUpdating) return;
+    const currentConsent = Boolean(session.user?.user_metadata?.marketing_consent);
+    const nextConsent = !currentConsent;
+    setMarketingConsentUpdating(true);
+    setConsentUpdateFeedback(null);
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          marketing_consent: nextConsent,
+          marketing_consent_updated_at: new Date().toISOString(),
+        },
+      });
+      if (error) throw error;
+      if (data.user) {
+        setSession((prev) => (prev ? { ...prev, user: data.user! } : prev));
+      }
+      setConsentUpdateFeedback(
+        nextConsent
+          ? lang === "it"
+            ? "Consenso comunicazioni promozionali attivato."
+            : "Marketing communications enabled."
+          : lang === "it"
+            ? "Consenso comunicazioni promozionali revocato."
+            : "Marketing communications withdrawn."
+      );
+    } catch (err: any) {
+      setConsentUpdateFeedback(err?.message || "Errore durante l'aggiornamento del consenso.");
+    } finally {
+      setMarketingConsentUpdating(false);
+    }
+  };
+
+  const renderSettingsModal = () => {
+    if (!showSettings) return null;
+    const isIt = lang === "it";
+    const currentMarketingConsent = Boolean(session?.user?.user_metadata?.marketing_consent);
+    const storedPrivacyVer = session?.user?.user_metadata?.privacy_policy_version;
+    const storedTermsVer = session?.user?.user_metadata?.terms_version;
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowSettings(false);
+        }}
+      >
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 border border-stone-200 my-8">
+          <div className="flex items-center justify-between pb-4 border-b border-stone-200 mb-5">
+            <div className="flex items-center gap-2">
+              <Settings size={18} className="text-[#F1641E]" />
+              <h3 className="font-bold text-stone-900 text-sm">{t.settingsTitle}</h3>
+            </div>
+            <button
+              onClick={() => setShowSettings(false)}
+              aria-label={t.close || "Chiudi"}
+              className="text-stone-400 hover:text-stone-600 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-stone-600 mb-2 leading-relaxed">
+                {t.openrouterNotice}{" "}
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#F1641E] font-bold underline hover:text-[#D44E13]"
+                >
+                  openrouter.ai/keys
+                </a>
+              </p>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">{t.openrouterKey}</label>
+              <input
+                type="password"
+                value={openrouterApiKey}
+                onChange={(e) => setOpenrouterApiKey(e.target.value)}
+                placeholder="sk-or-v1-..."
+                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
+              />
+              <p className="text-[11px] text-stone-500 mt-1">
+                {isIt
+                  ? "La chiave resta solo nella memoria temporanea del browser e non viene salvata in localStorage né sul database."
+                  : "Your key stays strictly in temporary browser memory and is never persisted to localStorage or our database."}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1.5">Modello OpenRouter</label>
+              <input
+                type="text"
+                value={openrouterModel}
+                onChange={(e) => setOpenrouterModel(e.target.value)}
+                placeholder="google/gemini-2.5-flash-image"
+                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
+              />
+            </div>
+
+            {session && (
+              <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-stone-900">
+                      {isIt ? "Privacy, Consensi & Account" : "Privacy, Consents & Account"}
+                    </p>
+                    <p className="text-[11px] text-stone-500">
+                      {isIt
+                        ? "Gestisci o revoca il consenso alle comunicazioni promozionali."
+                        : "Manage or withdraw your optional promotional email consent."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleMarketingConsent}
+                    disabled={marketingConsentUpdating}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer shrink-0 border ${
+                      currentMarketingConsent
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                        : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"
+                    }`}
+                  >
+                    {marketingConsentUpdating
+                      ? "..."
+                      : currentMarketingConsent
+                        ? isIt
+                          ? "Marketing: Attivo (Revoca)"
+                          : "Marketing: On (Withdraw)"
+                        : isIt
+                          ? "Marketing: Disattivo"
+                          : "Marketing: Off"}
+                  </button>
+                </div>
+
+                {consentUpdateFeedback && (
+                  <p className="text-[11px] font-semibold text-emerald-700">{consentUpdateFeedback}</p>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200/80 text-[11px] text-stone-500">
+                  <span>
+                    {storedPrivacyVer || storedTermsVer
+                      ? `Privacy v${storedPrivacyVer || LEGAL_CONFIG.privacyVersion} · Terms v${storedTermsVer || LEGAL_CONFIG.termsVersion}`
+                      : session.user?.email}
+                  </span>
+                  <a
+                    href={`mailto:${LEGAL_CONFIG.contactEmail}?subject=${encodeURIComponent(
+                      `Richiesta cancellazione account (${session.user?.email || ""})`
+                    )}&body=${encodeURIComponent(
+                      `Richiedo la cancellazione completa del mio account (Art. 17 GDPR).\nEmail: ${session.user?.email || ""}\nUser ID: ${session.user?.id || ""}`
+                    )}`}
+                    className="text-rose-700 hover:underline font-semibold"
+                  >
+                    {isIt ? "Richiedi cancellazione account" : "Request account deletion"}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-600 space-y-1">
+              <p className="font-semibold text-stone-800 flex items-center gap-1.5">
+                <Info size={13} className="text-[#F1641E]" />
+                <span>{isIt ? "Trasparenza Privacy, Cookie & Termini" : "Privacy, Cookies & Terms"}</span>
+              </p>
+              <p className="leading-relaxed">
+                {isIt
+                  ? "Le immagini vengono inviate via OpenRouter al modello AI solo per il render. Consulta la "
+                  : "Images are sent via OpenRouter to the AI model solely to render your mockup. Read our "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettings(false);
+                    navigateTo("privacy");
+                  }}
+                  className="text-[#F1641E] underline font-bold cursor-pointer hover:text-[#D44E13]"
+                >
+                  {t.privacyTitle || "Privacy & Cookie Policy"}
+                </button>{" "}
+                {isIt ? "e i " : "and "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettings(false);
+                    navigateTo("terms");
+                  }}
+                  className="text-[#F1641E] underline font-bold cursor-pointer hover:text-[#D44E13]"
+                >
+                  {t.termsTitle || "Termini di Servizio"}
+                </button>
+                .
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-stone-200">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="px-5 py-2.5 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              {t.unlimitedKeyBtn}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (viewMode === "privacy") {
     return (
       <>
@@ -1069,6 +1307,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
               setShowAuthModal(true);
             }
           }}
+          onOpenTerms={() => navigateTo("terms")}
           isLoggedIn={!!session}
         />
         <AuthModal
@@ -1084,7 +1323,55 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setShowAuthModal(false);
             navigateTo("privacy");
           }}
+          onOpenTerms={() => {
+            setShowAuthModal(false);
+            navigateTo("terms");
+          }}
         />
+        {renderSettingsModal()}
+        {renderPasswordRecoveryModal()}
+        {renderRecoverySuccessToast()}
+        {renderLangSuggestionToast()}
+      </>
+    );
+  }
+
+  if (viewMode === "terms") {
+    return (
+      <>
+        <TermsOfService
+          lang={lang}
+          onBack={() => navigateTo(session ? "studio" : "landing")}
+          onEnterStudio={() => {
+            if (session) {
+              navigateTo("studio");
+            } else {
+              setAuthModalTab("signin");
+              setShowAuthModal(true);
+            }
+          }}
+          onOpenPrivacy={() => navigateTo("privacy")}
+          isLoggedIn={!!session}
+        />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          lang={lang}
+          initialTab={authModalTab}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            navigateTo("studio");
+          }}
+          onOpenPrivacy={() => {
+            setShowAuthModal(false);
+            navigateTo("privacy");
+          }}
+          onOpenTerms={() => {
+            setShowAuthModal(false);
+            navigateTo("terms");
+          }}
+        />
+        {renderSettingsModal()}
         {renderPasswordRecoveryModal()}
         {renderRecoverySuccessToast()}
         {renderLangSuggestionToast()}
@@ -1107,6 +1394,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setShowAuthModal(true);
           }}
           onOpenPrivacy={() => navigateTo("privacy")}
+          onOpenTerms={() => navigateTo("terms")}
         />
         <AuthModal
           isOpen={showAuthModal}
@@ -1121,7 +1409,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setShowAuthModal(false);
             navigateTo("privacy");
           }}
+          onOpenTerms={() => {
+            setShowAuthModal(false);
+            navigateTo("terms");
+          }}
         />
+        {renderSettingsModal()}
         {renderPasswordRecoveryModal()}
         {renderRecoverySuccessToast()}
         {renderLangSuggestionToast()}
@@ -1740,94 +2033,28 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
         )}
 
         {/* Settings Modal */}
-        {showSettings && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 border border-stone-200">
-              <div className="flex items-center justify-between pb-4 border-b border-stone-200 mb-5">
-                <div className="flex items-center gap-2">
-                  <Settings size={18} className="text-[#F1641E]" />
-                  <h3 className="font-bold text-stone-900 text-sm">{t.settingsTitle}</h3>
-                </div>
-                <button onClick={() => setShowSettings(false)} className="text-stone-400 hover:text-stone-600 cursor-pointer">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-stone-600 mb-2 leading-relaxed">
-                    {t.openrouterNotice}{" "}
-                    <a
-                      href="https://openrouter.ai/keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#F1641E] font-bold underline hover:text-[#D44E13]"
-                    >
-                      openrouter.ai/keys
-                    </a>
-                  </p>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">{t.openrouterKey}</label>
-                  <input
-                    type="password"
-                    value={openrouterApiKey}
-                    onChange={(e) => setOpenrouterApiKey(e.target.value)}
-                    placeholder="sk-or-v1-..."
-                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">Modello OpenRouter</label>
-                  <input
-                    type="text"
-                    value={openrouterModel}
-                    onChange={(e) => setOpenrouterModel(e.target.value)}
-                    placeholder="google/gemini-2.5-flash-image"
-                    className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 focus:border-[#F1641E] focus:outline-none"
-                  />
-                </div>
-                <div className="mt-4 p-3 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-600 space-y-1">
-                  <p className="font-semibold text-stone-800 flex items-center gap-1.5">
-                    <Info size={13} className="text-[#F1641E]" />
-                    <span>Informativa Privacy & AI Provider</span>
-                  </p>
-                  <p className="leading-relaxed">
-                    Le immagini e i prompt vengono elaborati in tempo reale tramite OpenRouter conformemente al GDPR. Nessun dato viene ceduto a terzi. Leggi la{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSettings(false);
-                        navigateTo("privacy");
-                      }}
-                      className="text-[#F1641E] underline font-bold cursor-pointer hover:text-[#D44E13]"
-                    >
-                      Informativa sulla Privacy completa
-                    </button>
-                    .
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-stone-200">
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="px-5 py-2.5 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  {t.unlimitedKeyBtn}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderSettingsModal()}
 
         {/* Studio Footer */}
         <footer className="mt-12 py-6 border-t border-stone-200 flex flex-wrap items-center justify-between gap-4 text-xs text-stone-500">
-          <p>© {new Date().getFullYear()} {t.brandTitle}. {t.footerText}</p>
+          <div>
+            <p>© {new Date().getFullYear()} {t.brandTitle}. {t.footerText}</p>
+            <p className="text-[11px] text-stone-400 mt-0.5">
+              {LEGAL_CONFIG.dataControllerName} · {LEGAL_CONFIG.dataControllerAddress} · {LEGAL_CONFIG.contactEmail}
+            </p>
+          </div>
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigateTo("privacy")}
               className="text-stone-600 hover:text-stone-900 font-semibold underline transition-colors cursor-pointer"
             >
-              {t.privacyTitle || "Informativa sulla Privacy"}
+              {t.privacyTitle || "Privacy & Cookie Policy"}
+            </button>
+            <button
+              onClick={() => navigateTo("terms")}
+              className="text-stone-600 hover:text-stone-900 font-semibold underline transition-colors cursor-pointer"
+            >
+              {t.termsTitle || "Termini di Servizio"}
             </button>
           </div>
         </footer>
@@ -1844,6 +2071,10 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           onOpenPrivacy={() => {
             setShowAuthModal(false);
             navigateTo("privacy");
+          }}
+          onOpenTerms={() => {
+            setShowAuthModal(false);
+            navigateTo("terms");
           }}
         />
 

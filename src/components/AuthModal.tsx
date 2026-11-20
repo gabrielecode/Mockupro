@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Mail, Lock, Loader2, ArrowLeft, CheckCircle2, AlertCircle, ShoppingBag, Info } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { translations } from "../translations";
+import { LEGAL_CONFIG } from "../config/legal";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface AuthModalProps {
   initialTab?: "signin" | "signup";
   onSuccess?: () => void;
   onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -18,12 +20,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   lang = "it",
   initialTab = "signin",
   onSuccess,
-  onOpenPrivacy
+  onOpenPrivacy,
+  onOpenTerms
 }) => {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">(initialTab);
   const [isForgotPassword, setIsForgotPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false); // NON preselezionata
   const [marketingConsent, setMarketingConsent] = useState<boolean>(false); // NON preselezionata
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -91,16 +95,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (!termsAccepted) {
+      setErrorMsg(
+        t.termsRequiredError ||
+          "Per registrarti devi accettare i Termini e Condizioni dopo aver preso visione della Privacy Policy."
+      );
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
 
     try {
+      const nowIso = new Date().toISOString();
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
         options: {
           data: {
-            marketing_consent: marketingConsent
+            marketing_consent: marketingConsent,
+            marketing_consent_updated_at: nowIso,
+            privacy_policy_version: LEGAL_CONFIG.privacyVersion,
+            privacy_acknowledged_at: nowIso,
+            terms_version: LEGAL_CONFIG.termsVersion,
+            terms_accepted_at: nowIso
           }
         }
       });
@@ -405,37 +423,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              {/* Sign Up Exclusive: Checkbox non preselezionata & Link to /privacy */}
+              {/* Sign Up Exclusive: Explicit checkboxes (never pre-checked) & links to /privacy and /terms */}
               {activeTab === "signup" && (
                 <div className="space-y-3 pt-1">
                   <label className="flex items-start gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
+                      required
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#F1641E] accent-[#F1641E] focus:ring-[#F1641E] cursor-pointer shrink-0"
+                    />
+                    <span className="text-xs text-stone-700 leading-snug">
+                      {t.privacyTextBefore}{" "}
+                      <a
+                        href="/privacy"
+                        onClick={(e) => {
+                          if (onOpenPrivacy) {
+                            e.preventDefault();
+                            onOpenPrivacy();
+                          }
+                        }}
+                        className="text-[#F1641E] underline hover:text-[#D44E13] font-semibold"
+                      >
+                        {t.privacyLink}
+                      </a>{" "}
+                      {t.termsAndWord || "e accetto i"}{" "}
+                      <a
+                        href="/terms"
+                        onClick={(e) => {
+                          if (onOpenTerms) {
+                            e.preventDefault();
+                            onOpenTerms();
+                          }
+                        }}
+                        className="text-[#F1641E] underline hover:text-[#D44E13] font-semibold"
+                      >
+                        {t.termsLink || "Termini e Condizioni"}
+                      </a>
+                      . <span className="text-rose-600">*</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1 border-t border-stone-100">
+                    <input
+                      type="checkbox"
                       checked={marketingConsent}
                       onChange={(e) => setMarketingConsent(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#F1641E] accent-[#F1641E] focus:ring-[#F1641E] cursor-pointer"
+                      className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#F1641E] accent-[#F1641E] focus:ring-[#F1641E] cursor-pointer shrink-0"
                     />
                     <span className="text-xs text-stone-600 leading-snug">
                       {t.marketingConsent}
                     </span>
                   </label>
-
-                  <p className="text-[11px] text-stone-500 leading-relaxed pt-1 border-t border-stone-100">
-                    {t.privacyTextBefore}{" "}
-                    <a
-                      href="/privacy"
-                      onClick={(e) => {
-                        if (onOpenPrivacy) {
-                          e.preventDefault();
-                          onOpenPrivacy();
-                        }
-                      }}
-                      className="text-[#F1641E] underline hover:text-[#D44E13] font-medium"
-                    >
-                      {t.privacyLink}
-                    </a>
-                    .
-                  </p>
                 </div>
               )}
 
