@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { generateMockup } from "./server/mockupService";
+import { submitContactForm } from "./server/contactService";
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,13 @@ app.post("/api/mockup/generate", async (req, res) => {
   const clientIp = req.ip || req.socket.remoteAddress || "unknown";
   const authHeader = req.headers.authorization;
   const result = await generateMockup(req.body, clientIp, authHeader);
+  return res.status(result.status).json(result.body);
+});
+
+// Server-side Contact Form endpoint
+app.post("/api/contact", async (req, res) => {
+  const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+  const result = await submitContactForm(req.body, clientIp);
   return res.status(result.status).json(result.body);
 });
 

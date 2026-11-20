@@ -27,6 +27,7 @@ interface PrivacyPolicyProps {
   onBack: () => void;
   onEnterStudio?: () => void;
   onOpenTerms?: () => void;
+  onOpenContact?: () => void;
   isLoggedIn?: boolean;
 }
 
@@ -35,6 +36,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
   onBack,
   onEnterStudio,
   onOpenTerms,
+  onOpenContact,
   isLoggedIn = false,
 }) => {
   const [currentLang, setCurrentLang] = useState(() => resolveLegalLang(initialLang));
@@ -473,20 +475,36 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                 </div>
 
                 <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+                  {onOpenContact && (
+                    <button
+                      type="button"
+                      onClick={onOpenContact}
+                      className="px-4 py-3 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Mail size={14} />
+                      <span>{copy.sendEmailLabel}</span>
+                    </button>
+                  )}
                   <button
                     onClick={handleCopyEmail}
-                    className="px-4 py-3 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className={`px-4 py-3 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                      onOpenContact
+                        ? "bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700"
+                        : "bg-[#F1641E] hover:bg-[#D44E13] text-white"
+                    }`}
                   >
                     {copiedEmail ? <Check size={14} /> : <Copy size={14} />}
                     <span>{copiedEmail ? copy.copiedLabel : LEGAL_CONFIG.contactEmail}</span>
                   </button>
-                  <a
-                    href={`mailto:${LEGAL_CONFIG.contactEmail}?subject=Privacy%20MockupStudio%20Pro`}
-                    className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Mail size={14} />
-                    <span>{copy.sendEmailLabel}</span>
-                  </a>
+                  {!onOpenContact && (
+                    <a
+                      href={`mailto:${LEGAL_CONFIG.contactEmail}?subject=Privacy%20MockupStudio%20Pro`}
+                      className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Mail size={14} />
+                      <span>{copy.sendEmailLabel}</span>
+                    </a>
+                  )}
                 </div>
               </div>
             </section>

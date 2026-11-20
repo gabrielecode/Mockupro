@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X, LogOut, User } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, ShoppingBag, ShieldCheck, Zap, Globe, UploadCloud, SlidersHorizontal, FolderArchive, CheckCircle2, Store, Package, Wand2, Type, LayoutGrid, Instagram, ChevronDown, Menu, X, LogOut, User, Mail, MapPin, Copy, Check } from "lucide-react";
 import { translations } from "../translations";
 import { PRODUCT_TYPES } from "../data/products";
+import { LEGAL_CONFIG } from "../config/legal";
+import { ContactForm } from "./ContactForm";
 import heroImg from "../assets/images/mockup_studio_hero_1794995342264.webp";
 import type { Session } from "@supabase/supabase-js";
 
@@ -31,6 +33,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const t = translations[lang] || translations.it;
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [copiedContactEmail, setCopiedContactEmail] = useState(false);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -75,11 +78,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <a href="#features" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
               {t.navFeatures}
             </a>
-            <a href="#marketplaces" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
-              {t.navMarketplaces}
-            </a>
             <a href="#faq" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
               {t.navFaq}
+            </a>
+            <a href="#contact" className="hover:text-stone-900 transition-colors whitespace-nowrap shrink-0">
+              {t.navContact}
             </a>
           </nav>
 
@@ -187,6 +190,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
             >
               {t.navFaq}
+            </a>
+            <a
+              href="#contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-stone-900 transition-colors py-2 border-b border-stone-100"
+            >
+              {t.navContact}
             </a>
             <a
               href="/privacy"
@@ -624,6 +634,73 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
+      {/* Contact Section (#contact) */}
+      <section id="contact" className="border-t border-stone-200 bg-white py-20 px-6">
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-5 space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-stone-900 text-balance">
+                {t.contactTitle}
+              </h2>
+              <p className="text-stone-600 text-sm leading-relaxed max-w-md">
+                {t.contactSubtitle}
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-stone-200 space-y-4 text-sm">
+              <div>
+                <p className="text-xs font-bold text-stone-900">{t.contactDirectTitle}</p>
+                <p className="text-xs text-stone-500 mt-1 leading-relaxed">{t.contactDirectDesc}</p>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-stone-100">
+                  <span className="text-stone-500 font-medium">{t.contactEmailLabel}</span>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`mailto:${LEGAL_CONFIG.contactEmail}`}
+                      className="font-semibold text-stone-900 hover:text-[#F1641E] transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Mail size={13} className="text-[#F1641E]" />
+                      <span>{LEGAL_CONFIG.contactEmail}</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(LEGAL_CONFIG.contactEmail);
+                        setCopiedContactEmail(true);
+                        setTimeout(() => setCopiedContactEmail(false), 2500);
+                      }}
+                      className="p-1.5 rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
+                      title={t.contactCopyEmail}
+                      aria-label={t.contactCopyEmail}
+                    >
+                      {copiedContactEmail ? (
+                        <Check size={12} className="text-emerald-600" />
+                      ) : (
+                        <Copy size={12} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span className="text-stone-500 font-medium">{t.contactLocationLabel}</span>
+                  <span className="font-semibold text-stone-800 inline-flex items-center gap-1.5">
+                    <MapPin size={13} className="text-[#F1641E]" />
+                    <span>{LEGAL_CONFIG.dataControllerAddress}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 bg-[#FCFAF7] border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+            <ContactForm lang={lang} defaultEmail={session?.user?.email || ""} />
+          </div>
+        </div>
+      </section>
+
       {/* Dark Final CTA Block */}
       <section className="bg-stone-900 text-white py-20 px-6 text-center">
         <div className="max-w-3xl mx-auto space-y-6">
@@ -665,6 +742,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <a href="#features" className="hover:text-stone-900 transition-colors">{t.navFeatures}</a>
             <a href="#marketplaces" className="hover:text-stone-900 transition-colors">{t.navMarketplaces}</a>
             <a href="#faq" className="hover:text-stone-900 transition-colors">{t.navFaq}</a>
+            <a href="#contact" className="hover:text-stone-900 transition-colors">{t.navContact}</a>
             <a
               href="/privacy"
               onClick={(e) => {

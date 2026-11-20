@@ -17,6 +17,7 @@ interface TermsOfServiceProps {
   onBack: () => void;
   onEnterStudio?: () => void;
   onOpenPrivacy?: () => void;
+  onOpenContact?: () => void;
   isLoggedIn?: boolean;
 }
 
@@ -25,6 +26,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
   onBack,
   onEnterStudio,
   onOpenPrivacy,
+  onOpenContact,
   isLoggedIn = false,
 }) => {
   const [currentLang, setCurrentLang] = useState(() => resolveLegalLang(initialLang));
@@ -174,13 +176,29 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
                   <h3 className="text-base font-bold">{copy.contactTitle}</h3>
                   <p className="text-xs text-stone-300 mt-1">{copy.contactDesc}</p>
                 </div>
-                <a
-                  href={`mailto:${LEGAL_CONFIG.contactEmail}?subject=Termini%20MockupStudio%20Pro`}
-                  className="px-4 py-3 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center justify-center gap-2 shrink-0"
-                >
-                  <Mail size={14} />
-                  <span>{LEGAL_CONFIG.contactEmail}</span>
-                </a>
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  {onOpenContact && (
+                    <button
+                      type="button"
+                      onClick={onOpenContact}
+                      className="px-4 py-3 bg-[#F1641E] hover:bg-[#D44E13] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Mail size={14} />
+                      <span>{copy.contactTitle}</span>
+                    </button>
+                  )}
+                  <a
+                    href={`mailto:${LEGAL_CONFIG.contactEmail}?subject=Termini%20MockupStudio%20Pro`}
+                    className={`px-4 py-3 text-xs font-bold rounded-xl transition-colors inline-flex items-center justify-center gap-2 shrink-0 ${
+                      onOpenContact
+                        ? "bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700"
+                        : "bg-[#F1641E] hover:bg-[#D44E13] text-white"
+                    }`}
+                  >
+                    <Mail size={14} />
+                    <span>{LEGAL_CONFIG.contactEmail}</span>
+                  </a>
+                </div>
               </div>
             </section>
           </div>

@@ -24,7 +24,8 @@ import {
   User,
   Lock,
   CheckCircle2,
-  FileText
+  FileText,
+  Mail
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
@@ -35,6 +36,7 @@ import { LandingPage } from "./components/LandingPage";
 import { AuthModal } from "./components/AuthModal";
 import { PrivacyPolicy } from "./components/PrivacyPolicy";
 import { TermsOfService } from "./components/TermsOfService";
+import { ContactModal } from "./components/ContactModal";
 import { LEGAL_CONFIG } from "./config/legal";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -172,6 +174,7 @@ export default function App() {
   const [recoveryLoading, setRecoveryLoading] = useState<boolean>(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [recoverySuccessNotification, setRecoverySuccessNotification] = useState<string | null>(null);
+  const [showContactModal, setShowContactModal] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -1326,6 +1329,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             }
           }}
           onOpenTerms={() => navigateTo("terms")}
+          onOpenContact={() => setShowContactModal(true)}
           isLoggedIn={!!session}
         />
         <AuthModal
@@ -1345,6 +1349,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setShowAuthModal(false);
             navigateTo("terms");
           }}
+        />
+        <ContactModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          lang={lang}
+          defaultEmail={session?.user?.email || ""}
         />
         {renderSettingsModal()}
         {renderPasswordRecoveryModal()}
@@ -1369,6 +1379,7 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             }
           }}
           onOpenPrivacy={() => navigateTo("privacy")}
+          onOpenContact={() => setShowContactModal(true)}
           isLoggedIn={!!session}
         />
         <AuthModal
@@ -1388,6 +1399,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             setShowAuthModal(false);
             navigateTo("terms");
           }}
+        />
+        <ContactModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          lang={lang}
+          defaultEmail={session?.user?.email || ""}
         />
         {renderSettingsModal()}
         {renderPasswordRecoveryModal()}
@@ -1497,6 +1514,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
               className="px-4 py-2.5 rounded-xl font-bold text-xs bg-stone-50 text-stone-700 border border-stone-200 hover:bg-stone-100 transition-all flex items-center gap-2 cursor-pointer"
             >
               <History size={14} className="text-[#F1641E]" /> {t.history} ({historyList.length})
+            </button>
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs bg-stone-50 text-stone-700 border border-stone-200 hover:bg-stone-100 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Mail size={14} className="text-[#F1641E]" /> {t.navContact}
             </button>
             <button
               onClick={loadExampleImages}
@@ -2063,6 +2086,12 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
           </div>
           <div className="flex items-center gap-4">
             <button
+              onClick={() => setShowContactModal(true)}
+              className="text-stone-600 hover:text-stone-900 font-semibold underline transition-colors cursor-pointer"
+            >
+              {t.navContact}
+            </button>
+            <button
               onClick={() => navigateTo("privacy")}
               className="text-stone-600 hover:text-stone-900 font-semibold underline transition-colors cursor-pointer"
             >
@@ -2076,6 +2105,13 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
             </button>
           </div>
         </footer>
+
+        <ContactModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          lang={lang}
+          defaultEmail={session?.user?.email || ""}
+        />
 
         {/* Auth Modal */}
         <AuthModal
