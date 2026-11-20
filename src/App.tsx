@@ -547,6 +547,24 @@ export default function App() {
               exported = webpData;
             }
           }
+          const exportedBase64 = exported.split(",")[1] || "";
+          if (isFinalExport && exportedBase64.length > 3_000_000) {
+            const maxSide = 1400;
+            const currentMax = Math.max(canvas.width, canvas.height);
+            const scaleFactor = currentMax > maxSide ? maxSide / currentMax : 1;
+            const jpegCanvas = document.createElement("canvas");
+            jpegCanvas.width = Math.round(canvas.width * scaleFactor);
+            jpegCanvas.height = Math.round(canvas.height * scaleFactor);
+            const jpegCtx = jpegCanvas.getContext("2d");
+            if (jpegCtx) {
+              jpegCtx.fillStyle = "#FFFFFF";
+              jpegCtx.fillRect(0, 0, jpegCanvas.width, jpegCanvas.height);
+              jpegCtx.drawImage(canvas, 0, 0, jpegCanvas.width, jpegCanvas.height);
+              exported = jpegCanvas.toDataURL("image/jpeg", 0.85);
+            } else {
+              exported = canvas.toDataURL("image/jpeg", 0.85);
+            }
+          }
           resolve(exported);
         } catch (error) {
           console.error("Canvas composite failed safely:", error);

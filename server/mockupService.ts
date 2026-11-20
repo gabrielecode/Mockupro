@@ -65,6 +65,14 @@ export async function generateMockup(
       };
     }
 
+    // Rate limiter
+    if (!checkRateLimit(clientIp)) {
+      return {
+        status: 429,
+        body: { error: "Rate limit exceeded. Maximum 10 requests per minute." },
+      };
+    }
+
     // Check OpenRouter API key configuration
     const userApiKey =
       typeof payload?.apiKey === "string" ? payload.apiKey.trim() : "";
@@ -137,10 +145,10 @@ export async function generateMockup(
           body: { error: "Empty base64Image data." },
         };
       }
-      if (buffer.length > 8 * 1024 * 1024) {
+      if (buffer.length > 4 * 1024 * 1024) {
         return {
           status: 400,
-          body: { error: "Image size exceeds 8MB limit." },
+          body: { error: "Image size exceeds 4MB limit." },
         };
       }
     } catch {
@@ -204,14 +212,6 @@ export async function generateMockup(
       }
     }
 
-    // Rate limiter
-    if (!checkRateLimit(clientIp)) {
-      return {
-        status: 429,
-        body: { error: "Rate limit exceeded. Maximum 10 requests per minute." },
-      };
-    }
-
     // Forza provider "openrouter"
     const activeOpenRouterKey = hasUserApiKey ? userApiKey : serverOpenRouterKey;
 
@@ -271,6 +271,7 @@ export async function generateMockup(
     const message = orData.choices?.[0]?.message || {};
 
     let generatedBase64: string | null = null;
+    let generatedMime = "image/png";
     let textResponse = "";
 
     let rawImageCandidate: string | null =
@@ -298,6 +299,9 @@ export async function generateMockup(
             rawImageCandidate = candidateUrl;
           } else if (typeof part?.inlineData?.data === "string") {
             generatedBase64 = part.inlineData.data;
+            if (typeof part.inlineData.mimeType === "string" && part.inlineData.mimeType) {
+              generatedMime = part.inlineData.mimeType;
+            }
           }
         }
       }
@@ -308,15 +312,24 @@ export async function generateMockup(
 
     if (!generatedBase64 && rawImageCandidate) {
       const dataUriMatch = rawImageCandidate.match(
-        /^data:image\/[a-zA-Z0-9+.-]+;base64,(.+)$/
+        /^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/
       );
       if (dataUriMatch) {
-        generatedBase64 = dataUriMatch[1];
+        generatedMime = dataUriMatch[1];
+        generatedBase64 = dataUriMatch[2];
       } else if (rawImageCandidate.includes("base64,")) {
+        const mimeMatch = rawImageCandidate.match(/^data:([^;,]+)/i);
+        if (mimeMatch) {
+          generatedMime = mimeMatch[1];
+        }
         generatedBase64 = rawImageCandidate.split("base64,")[1];
       } else if (/^https?:\/\//i.test(rawImageCandidate)) {
         const imgRes = await fetch(rawImageCandidate);
         if (imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type");
+          if (contentType) {
+            generatedMime = contentType.split(";")[0].trim();
+          }
           const arrBuf = await imgRes.arrayBuffer();
           generatedBase64 = Buffer.from(arrBuf).toString("base64");
         }
@@ -340,6 +353,7 @@ export async function generateMockup(
       body: {
         success: true,
         image: generatedBase64,
+        mime: generatedMime,
         text: textResponse,
       },
     };
