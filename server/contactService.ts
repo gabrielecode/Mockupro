@@ -113,6 +113,10 @@ export async function submitContactForm(
           }),
         });
         emailDelivered = resendRes.ok;
+        if (!resendRes.ok) {
+          const errText = await resendRes.text().catch(() => "");
+          console.warn(`Resend API error (${resendRes.status}):`, errText);
+        }
       } catch (emailErr) {
         console.warn("Resend contact notification failed:", emailErr);
       }
@@ -128,7 +132,7 @@ export async function submitContactForm(
     if (SUPABASE_URL && SUPABASE_KEY && !SUPABASE_URL.includes("placeholder")) {
       try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        await supabase.from("contact_messages").insert({
+        const { error: dbError } = await supabase.from("contact_messages").insert({
           reference_id: referenceId,
           name,
           email,
@@ -136,6 +140,9 @@ export async function submitContactForm(
           message,
           lang,
         });
+        if (dbError) {
+          console.debug("Optional contact_messages insert skipped:", dbError.message);
+        }
       } catch {
         // Non-blocking if contact_messages table is not provisioned
       }

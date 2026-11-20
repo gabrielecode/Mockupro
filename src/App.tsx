@@ -717,7 +717,8 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
       }
 
       if (result.success && result.image) {
-        const finalUrl = `data:image/png;base64,${result.image}`;
+        const finalMime = typeof result.mime === "string" && result.mime ? result.mime : "image/png";
+        const finalUrl = `data:${finalMime};base64,${result.image}`;
         setGeneratedMockups((prev) => ({ ...prev, [scenario.id]: finalUrl }));
 
         setHistoryList((prev) => [
@@ -765,7 +766,9 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
       activeMockups.forEach(([id, base64Url]) => {
         const parts = (base64Url as string).split(",");
         const base64Data = parts.length > 1 ? parts[1] : parts[0];
-        zip.file(`mockup-${productType}-${id}.png`, base64Data, { base64: true });
+        const mimePart = (base64Url as string).match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
+        const ext = mimePart?.[1] === "jpeg" ? "jpg" : (mimePart?.[1] || "png");
+        zip.file(`mockup-${productType}-${id}.${ext}`, base64Data, { base64: true });
       });
 
       const content = await zip.generateAsync({ type: "blob" });
@@ -785,9 +788,11 @@ TECHNICAL: Pure commercial aesthetic, highly detailed, perfect 1:1 square ratio 
   };
 
   const downloadImage = (url: string, id: string) => {
+    const mimePart = url.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
+    const ext = mimePart?.[1] === "jpeg" ? "jpg" : (mimePart?.[1] || "png");
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Mockup-Pro-${productType}-${id}.png`;
+    link.download = `Mockup-Pro-${productType}-${id}.${ext}`;
     link.click();
   };
 
